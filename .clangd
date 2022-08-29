@@ -1,0 +1,6 @@
+CompileFlags:
+  Add: [
+  -std=c++17,
+  -I/home/madplayer/GIT/please-f/ns-allinone-3.36.1/ns-3.36.1/build/include/,
+  ]
+
