@@ -106,7 +106,4 @@ simple_udp_app::send_msg(Ptr<Packet> packet, Ipv4Address dest, port_t port)
   packet->AddHeader(header);
 
   socket_->SendTo(packet, 0, InetSocketAddress(dest, port));
-
-  Simulator::Schedule(MilliSeconds(100), &simple_udp_app::send_msg, this, packet,
-                      dest, port);
 }

@@ -36,6 +36,30 @@ enum special_nodes
     P2P_SERVER = 1,
   };
 
+class udp_app_helper
+{
+public:
+  udp_app_helper(Ptr<simple_udp_app> client, Ipv4Address dest, port_t port):
+    client_{client}, dest_{dest}, port_{port}
+  {
+  }
+
+  void
+  send_packet(size_t data_len)
+  {
+    auto packet = Create<Packet>(data_len);
+
+    Simulator::Schedule(MilliSeconds(100), &simple_udp_app::send_msg, client_, packet, dest_, port_);
+    Simulator::Schedule(MilliSeconds(100), &udp_app_helper::send_packet, this, data_len);
+  }
+
+private:
+
+  Ptr<simple_udp_app> client_;
+  Ipv4Address dest_;
+  port_t port_;
+};   
+
 int
 main(int argc, char *argv[])
 {
@@ -113,9 +137,8 @@ main(int argc, char *argv[])
   server_node->AddApplication(server);
 
 
-  auto packet = Create<Packet>(1024);
-  Simulator::Schedule(MilliSeconds(100), &simple_udp_app::send_msg, client, packet,
-                      p2pInterfaces.GetAddress(special_nodes::P2P_SERVER), 7777);
+  udp_app_helper app_helper(client, p2pInterfaces.GetAddress(special_nodes::P2P_SERVER), 7777);
+  app_helper.send_packet(1024);
 
 
   Ipv4GlobalRoutingHelper::PopulateRoutingTables();
