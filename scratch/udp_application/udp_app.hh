@@ -32,14 +32,14 @@ namespace ns3
     virtual ~simple_udp_app();
 
     static TypeId GetTypeID();
-    virtual TypeId GetInstanceTypeId() const;
+    virtual TypeId GetInstanceTypeId() const override;
 
     void receive_handler(Ptr<Socket> socket);
     void send_msg(Ptr<Packet> packet, Ipv4Address dest, port_t port);
 
   private:
     void setup_receive_socket(Ptr<Socket> socket, port_t port);
-    virtual void StartApplication();
+    virtual void StartApplication() override;
 
     Ptr<Socket> socket_;
     port_t port_;
