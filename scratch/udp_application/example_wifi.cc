@@ -22,7 +22,6 @@
 #include "ns3/applications-module.h"
 #include "ns3/wifi-module.h"
 #include "ns3/mobility-module.h"
-#include "ns3/csma-module.h"
 #include "ns3/internet-module.h"
 #include "udp_app.hh"
 #include <string>
@@ -34,7 +33,7 @@ NS_LOG_COMPONENT_DEFINE("example-wifi");
 enum special_nodes
   {
     WIFI_AP = 0,
-    P2P_CSMA = 1,
+    P2P_SERVER = 1,
   };
 
 int
@@ -44,19 +43,10 @@ main(int argc, char *argv[])
   NodeContainer p2pNodes(2);
 
   PointToPointHelper pointToPoint;
-  pointToPoint.SetDeviceAttribute("DataRate", StringValue("5Mbps"));
-  pointToPoint.SetChannelAttribute("Delay", StringValue("2ms"));
+  pointToPoint.SetDeviceAttribute("DataRate", StringValue("100Mbps"));
+  pointToPoint.SetChannelAttribute("Delay", StringValue("1ms"));
 
   auto p2pDevices = pointToPoint.Install(p2pNodes);
-
-  NodeContainer csmaNodes;
-  csmaNodes.Add(p2pNodes.Get(special_nodes::P2P_CSMA));
-
-  CsmaHelper csma;
-  csma.SetChannelAttribute("DataRate", StringValue ("100Mbps"));
-  csma.SetChannelAttribute("Delay", TimeValue(NanoSeconds(6560)));
-
-  auto csmaDevices = csma.Install(csmaNodes);
 
   // wifi part
   NodeContainer wifiStaNodes(3);
@@ -98,7 +88,7 @@ main(int argc, char *argv[])
 
   // internet setting
   InternetStackHelper stack;
-  stack.Install(csmaNodes);
+  stack.Install(p2pNodes.Get(special_nodes::P2P_SERVER));
   stack.Install(wifiApNode);
   stack.Install(wifiStaNodes);
 
@@ -106,9 +96,6 @@ main(int argc, char *argv[])
 
   address.SetBase("10.1.1.0", "255.255.255.0");
   auto p2pInterfaces = address.Assign(p2pDevices);
-
-  address.SetBase("10.1.2.0", "255.255.255.0");
-  auto csmaInterfaces = address.Assign(csmaDevices);
 
   address.SetBase("10.1.3.0", "255.255.255.0");
   address.Assign(staDevices);
@@ -122,13 +109,13 @@ main(int argc, char *argv[])
   client->SetStopTime(Seconds(10));
 
   auto server = CreateObject<simple_udp_app>();
-  auto server_node = csmaNodes.Get(0);
+  auto server_node = p2pNodes.Get(special_nodes::P2P_SERVER);
   server_node->AddApplication(server);
 
 
   auto packet = Create<Packet>(1024);
   Simulator::Schedule(MilliSeconds(100), &simple_udp_app::send_msg, client, packet,
-                      csmaInterfaces.GetAddress(0), 7777);
+                      p2pInterfaces.GetAddress(special_nodes::P2P_SERVER), 7777);
 
 
   Ipv4GlobalRoutingHelper::PopulateRoutingTables();
