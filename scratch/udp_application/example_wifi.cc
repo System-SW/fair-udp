@@ -23,7 +23,7 @@
 #include "ns3/wifi-module.h"
 #include "ns3/mobility-module.h"
 #include "ns3/internet-module.h"
-#include "udp_app.hh"
+#include "udp_app.h"
 #include <string>
 
 using namespace ns3;

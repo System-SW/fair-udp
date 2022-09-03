@@ -43,6 +43,7 @@ namespace ns3
 
     Ptr<Socket> socket_;
     port_t port_;
+    uint32_t seq_number_{0};
   };
   
 } // namespace ns3

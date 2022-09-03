@@ -15,14 +15,15 @@
  */
 
 #include "ns3/log.h"
-#include "udp_app.hh"
+#include "udp_app.h"
 #include "ns3/udp-socket.h"
 #include "ns3/simulator.h"
 #include "ns3/csma-net-device.h"
 #include "ns3/ethernet-header.h"
 #include "ns3/arp-header.h"
 #include "ns3/ipv4-header.h"
-#include "ns3/udp-header.h"
+#include "fair_udp_header.h"
+
 
 using namespace ns3;
 
@@ -50,7 +51,10 @@ simple_udp_app::simple_udp_app()
   port_ = 7777;
 }
 
-simple_udp_app::~simple_udp_app() {}
+simple_udp_app::~simple_udp_app()
+{
+  socket_->Close();
+}
 
 void
 simple_udp_app::setup_receive_socket(Ptr<Socket> socket, port_t port)    
@@ -81,9 +85,13 @@ simple_udp_app::receive_handler(Ptr<Socket> socket)
   NS_LOG_FUNCTION(this << socket);
   Address from;
 
-  while (auto packet = socket->RecvFrom(from))
+  if (auto packet = socket->RecvFrom(from))
     {
+      fair_udp_header header;
+      packet->RemoveHeader(header);
+
       NS_LOG_INFO("Handle message (size): " << packet->GetSize()
+                  << " Sequence Number: " << header.get_data()
                   << " at time " << Now().GetSeconds());
       NS_LOG_INFO(packet->ToString());
     }
@@ -93,6 +101,9 @@ void
 simple_udp_app::send_msg(Ptr<Packet> packet, Ipv4Address dest, port_t port)
 {
   NS_LOG_FUNCTION(this << packet << dest << port);
+  fair_udp_header header;
+  header.set_data(seq_number_++);
+  packet->AddHeader(header);
 
   socket_->SendTo(packet, 0, InetSocketAddress(dest, port));
 
