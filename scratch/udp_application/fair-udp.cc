@@ -99,7 +99,6 @@ FairUdpApp::ReceiveHandler(Ptr<Socket> socket)
         {
           // reset my sequence number to the requested number
           seq_number_ = header.GetSequence();
-          NS_LOG_DEBUG("Receive NACK");
           // need congestion control below -> reduce transmission bandwidth
         }
       else if (header.IsOn<FairUdpHeader::Bit::RESET>()) // server side
@@ -114,7 +113,7 @@ FairUdpApp::ReceiveHandler(Ptr<Socket> socket)
             }
           else       // packet drop occurred
             {
-              NS_LOG_DEBUG(InetSocketAddress::ConvertFrom(from).GetIpv4() << " "
+              NS_LOG_INFO(InetSocketAddress::ConvertFrom(from).GetIpv4() << " "
                            << header.GetSequence() << " != " << connections_[from].sequence_number);
               SendNACK(from);
             }
@@ -123,7 +122,6 @@ FairUdpApp::ReceiveHandler(Ptr<Socket> socket)
       NS_LOG_INFO("Handle message (size): " << packet->GetSize()
                   << header
                   << " at time " << Now().GetSeconds());
-      NS_LOG_INFO(packet->ToString());
     }
 }
 

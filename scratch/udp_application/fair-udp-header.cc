@@ -79,12 +79,12 @@ FairUdpHeader::operator |= (Bit bit)
 void
 FairUdpHeader::SetSequence(uint16_t seq)
 {
-  bit_field_ &= 0xFFFF0000;     // clean up seq number
+  bit_field_ &= 0xFFFF0000u;     // clean up seq number
   bit_field_ |= seq;            // set seq number
 }
 
 uint16_t
 FairUdpHeader::GetSequence() const
 {
-  return static_cast<uint16_t>(bit_field_ & 0x0000FFFF);
+  return static_cast<uint16_t>(bit_field_ & 0x0000FFFFu);
 }

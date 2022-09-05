@@ -37,8 +37,8 @@ namespace ns3
     static constexpr size_t HEADER_SIZE = 2 * sizeof(uint32_t);
     enum class Bit: uint32_t
       {
-        NACK = 0x1 << 30,       // use enclosed sequence number in the next message
-        RESET = 0x1 << 29,      // request reset sequence number to 0
+        NACK = 0x1u << 31,       // use enclosed sequence number in the next message
+        RESET = 0x1u << 30,      // request reset sequence number to 0
       };
 
     static TypeId GetTypeId();
