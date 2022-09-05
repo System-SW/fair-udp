@@ -129,7 +129,7 @@ main(int argc, char *argv[])
   client->SetDestAddr(InetSocketAddress(p2pInterfaces.GetAddress(special_nodes::P2P_SERVER), 7777));
   auto client_node = wifiStaNodes.Get(0);
   client_node->AddApplication(client);
-  client->SetStartTime(Seconds(0));
+  client->SetStartTime(Seconds(1));
   client->SetStopTime(Seconds(10));
 
   auto server = CreateObject<FairUdpApp>();
@@ -140,7 +140,7 @@ main(int argc, char *argv[])
 
   std::string msg{"Hello World"};
   FairUdphelper app_helper(client);
-  app_helper.SendPacket(msg);
+  Simulator::Schedule(Seconds(1), &FairUdphelper::SendPacket, &app_helper, msg);
 
 
   Ipv4GlobalRoutingHelper::PopulateRoutingTables();
