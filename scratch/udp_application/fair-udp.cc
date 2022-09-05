@@ -59,10 +59,10 @@ FairUdpApp::~FairUdpApp()
 }
 
 void
-FairUdpApp::SetupReceiveSocket(Ptr<Socket> socket, port_t port)    
+FairUdpApp::SetupReceiveSocket(port_t port)
 {
   InetSocketAddress local = InetSocketAddress(Ipv4Address::GetAny(), port);
-  if (socket->Bind(local) == -1)
+  if (socket_->Bind(local) == -1)
     {
       NS_FATAL_ERROR("Failed to bind socket");
     }
@@ -74,11 +74,14 @@ FairUdpApp::StartApplication()
   auto tid = TypeId::LookupByName("ns3::UdpSocketFactory");
   socket_ = Socket::CreateSocket(GetNode(), tid);
 
-  SetupReceiveSocket(socket_, port_);
-
+  if (!dest_.IsInvalid())       // destination is configured (this is client)
+    {
+      socket_->Connect(dest_);
+      NS_LOG_FUNCTION(this << InetSocketAddress::ConvertFrom(dest_).GetIpv4()
+                      << InetSocketAddress::ConvertFrom(dest_).GetPort());
+    }
+  SetupReceiveSocket(port_);
   socket_->SetRecvCallback(MakeCallback(&FairUdpApp::ReceiveHandler, this));
-
-  socket_ = Socket::CreateSocket(GetNode(), tid);
 }
 
 void
@@ -92,6 +95,31 @@ FairUdpApp::ReceiveHandler(Ptr<Socket> socket)
       FairUdpHeader header;
       packet->RemoveHeader(header);
 
+      if (header.IsOn<FairUdpHeader::Bit::NACK>()) // client side
+        {
+          // reset my sequence number to the requested number
+          seq_number_ = header.GetSequence();
+          NS_LOG_DEBUG("Receive NACK");
+          // need congestion control below -> reduce transmission bandwidth
+        }
+      else if (header.IsOn<FairUdpHeader::Bit::RESET>()) // server side
+        {
+          connections_[from].sequence_number = 0;
+        }
+      else  // handle received message (server side)
+        {
+          if (connections_[from].sequence_number == header.GetSequence()) // expected sequence number
+            {
+              connections_[from].sequence_number++;
+            }
+          else       // packet drop occurred
+            {
+              NS_LOG_DEBUG(InetSocketAddress::ConvertFrom(from).GetIpv4() << " "
+                           << header.GetSequence() << " != " << connections_[from].sequence_number);
+              SendNACK(from);
+            }
+        }
+
       NS_LOG_INFO("Handle message (size): " << packet->GetSize()
                   << header
                   << " at time " << Now().GetSeconds());
@@ -100,13 +128,36 @@ FairUdpApp::ReceiveHandler(Ptr<Socket> socket)
 }
 
 void
-FairUdpApp::SendMsg(Ptr<Packet> packet, Ipv4Address dest, port_t port)
+FairUdpApp::SendMsg(Ptr<Packet> packet)
 {
-  NS_LOG_FUNCTION(this << packet << dest << port);
+  NS_LOG_FUNCTION(this << packet << InetSocketAddress::ConvertFrom(dest_).GetIpv4());
 
   FairUdpHeader header;
   header.SetSequence(seq_number_++);
   packet->AddHeader(header);
 
-  socket_->SendTo(packet, 0, InetSocketAddress(dest, port));
+  socket_->Send(packet);
+}
+
+void
+FairUdpApp::SendNACK(Address dest)
+{
+  auto packet = Create<Packet>();
+
+  FairUdpHeader header;
+  header.SetSequence(connections_[dest].sequence_number);
+  header |= FairUdpHeader::Bit::NACK;
+  packet->AddHeader(header);
+
+  NS_ABORT_IF(!InetSocketAddress::IsMatchingType(dest));
+  auto ipv4_address = InetSocketAddress::ConvertFrom(dest);
+  NS_LOG_INFO(this << packet << ipv4_address.GetIpv4() << ipv4_address.GetPort());
+  socket_->SendTo(packet, 0, ipv4_address);
+}
+
+void
+FairUdpApp::SetDestAddr(Address dest)
+{
+  NS_ABORT_IF(!InetSocketAddress::IsMatchingType(dest));
+  dest_ = dest;
 }

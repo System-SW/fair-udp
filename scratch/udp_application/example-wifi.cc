@@ -39,8 +39,8 @@ enum special_nodes
 class FairUdphelper
 {
 public:
-  FairUdphelper(Ptr<FairUdpApp> client, Ipv4Address dest, port_t port):
-    client_{client}, dest_{dest}, port_{port}
+  FairUdphelper(Ptr<FairUdpApp> client):
+    client_{client}
   {
   }
 
@@ -49,15 +49,13 @@ public:
   {
     auto packet = Create<Packet>(reinterpret_cast<uint8_t *>(buffer.data()), buffer.size());
 
-    Simulator::Schedule(MilliSeconds(100), &FairUdpApp::SendMsg, client_, packet, dest_, port_);
+    Simulator::Schedule(MilliSeconds(100), &FairUdpApp::SendMsg, client_, packet);
     Simulator::Schedule(MilliSeconds(100), &FairUdphelper::SendPacket, this, buffer);
   }
 
 private:
 
   Ptr<FairUdpApp> client_;
-  Ipv4Address dest_;
-  port_t port_;
 };   
 
 int
@@ -79,6 +77,7 @@ main(int argc, char *argv[])
   auto channel = YansWifiChannelHelper::Default();
   auto phy = YansWifiPhyHelper();
   phy.SetChannel(channel.Create());
+  phy.SetErrorRateModel("ns3::YansErrorRateModel");
 
   WifiMacHelper mac;
   auto ssid = Ssid("ns-3-ssid");
@@ -127,6 +126,7 @@ main(int argc, char *argv[])
 
   // assign apps to endpoints
   auto client = CreateObject<FairUdpApp>();
+  client->SetDestAddr(InetSocketAddress(p2pInterfaces.GetAddress(special_nodes::P2P_SERVER), 7777));
   auto client_node = wifiStaNodes.Get(0);
   client_node->AddApplication(client);
   client->SetStartTime(Seconds(0));
@@ -139,7 +139,7 @@ main(int argc, char *argv[])
   Packet::EnablePrinting();
 
   std::string msg{"Hello World"};
-  FairUdphelper app_helper(client, p2pInterfaces.GetAddress(special_nodes::P2P_SERVER), 7777);
+  FairUdphelper app_helper(client);
   app_helper.SendPacket(msg);
 
 

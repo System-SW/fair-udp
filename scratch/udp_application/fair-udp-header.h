@@ -54,7 +54,7 @@ namespace ns3
     template <Bit bit>
     bool IsOn() const
     {
-      return bit_field_ & static_cast<uint32_t>(bit);
+      return (bit_field_ & static_cast<uint32_t>(bit)) != 0;
     }
 
     void SetSequence(uint16_t seq);

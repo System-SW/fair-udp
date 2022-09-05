@@ -21,11 +21,28 @@
 
 #include "ns3/socket.h"
 #include "ns3/application.h"
+#include <unordered_map>
 
 
 namespace ns3
 {
   using port_t = uint16_t;
+
+  // reference from packet-sink.h
+  struct AddressHash
+  {
+    size_t operator() (const Address &x) const
+    {
+      NS_ABORT_IF(!InetSocketAddress::IsMatchingType(x));
+      auto a = InetSocketAddress::ConvertFrom(x);
+      return std::hash<uint32_t>()(a.GetIpv4().Get());
+    }
+  };
+
+  struct connection
+  {
+    uint16_t sequence_number{0};
+  };
 
   class FairUdpApp : public Application
   {
@@ -34,18 +51,22 @@ namespace ns3
     virtual ~FairUdpApp();
 
     static TypeId GetTypeID();
-    virtual TypeId GetInstanceTypeId() const override;
+    TypeId GetInstanceTypeId() const override;
 
     void ReceiveHandler(Ptr<Socket> socket);
-    void SendMsg(Ptr<Packet> packet, Ipv4Address dest, port_t port);
+    void SendMsg(Ptr<Packet> packet);
 
+    void SetDestAddr(Address dest);
   private:
-    void SetupReceiveSocket(Ptr<Socket> socket, port_t port);
-    virtual void StartApplication() override;
+    void SetupReceiveSocket(port_t port);
+    void StartApplication() override;
+    void SendNACK(Address dest);
 
     Ptr<Socket> socket_;
     port_t port_;
     uint16_t seq_number_{0};
+    Address dest_;
+    std::unordered_map<Address, connection, AddressHash> connections_;
   };
   
 } // namespace ns3
