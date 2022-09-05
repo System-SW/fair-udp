@@ -13,39 +13,29 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
+#ifndef FAIR_UDP_HEADER_H
+#define FAIR_UDP_HEADER_H
 
-#ifndef UDP_APP_H
-#define UDP_APP_H
-
-#include "ns3/socket.h"
-#include "ns3/application.h"
-
+#include "ns3/header.h"
 
 namespace ns3
 {
-  using port_t = uint16_t;
-
-  class simple_udp_app : public Application
+  class FairUdpHeader : public Header
   {
   public:
-    simple_udp_app();
-    virtual ~simple_udp_app();
-
-    static TypeId GetTypeID();
+    static TypeId GetTypeId();
     virtual TypeId GetInstanceTypeId() const override;
+    virtual uint32_t GetSerializedSize() const override;
+    virtual void Serialize(Buffer::Iterator start) const override;
+    virtual uint32_t Deserialize(Buffer::Iterator start) override;
+    virtual void Print(std::ostream& os) const override;
 
-    void receive_handler(Ptr<Socket> socket);
-    void send_msg(Ptr<Packet> packet, Ipv4Address dest, port_t port);
+    void SetData(uint32_t data);
+    uint32_t GetData() const;
 
   private:
-    void setup_receive_socket(Ptr<Socket> socket, port_t port);
-    virtual void StartApplication() override;
-
-    Ptr<Socket> socket_;
-    port_t port_;
-    uint32_t seq_number_{0};
+    uint32_t data_;
   };
-  
-} // namespace ns3
+}    
 
-#endif /* UDP_APP_H */
+#endif /* FAIR_UDP_HEADER_H */

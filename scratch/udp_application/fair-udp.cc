@@ -15,49 +15,49 @@
  */
 
 #include "ns3/log.h"
-#include "udp_app.h"
+#include "fair-udp.h"
 #include "ns3/udp-socket.h"
 #include "ns3/simulator.h"
 #include "ns3/csma-net-device.h"
 #include "ns3/ethernet-header.h"
 #include "ns3/arp-header.h"
 #include "ns3/ipv4-header.h"
-#include "fair_udp_header.h"
+#include "fair-udp-header.h"
 
 
 using namespace ns3;
 
-NS_LOG_COMPONENT_DEFINE("simple_udp_app");
-NS_OBJECT_ENSURE_REGISTERED(simple_udp_app);
+NS_LOG_COMPONENT_DEFINE("FairUdpApp");
+NS_OBJECT_ENSURE_REGISTERED(FairUdpApp);
 
 TypeId
-simple_udp_app::GetTypeID()
+FairUdpApp::GetTypeID()
 {
-  static TypeId tid = TypeId("ns3::simple_udp_app")
-    .AddConstructor<simple_udp_app>()
+  static TypeId tid = TypeId("ns3::FairUdpApp")
+    .AddConstructor<FairUdpApp>()
     .SetParent<Application>();
 
   return tid;
 }
 
 TypeId
-simple_udp_app::GetInstanceTypeId() const
+FairUdpApp::GetInstanceTypeId() const
 {
-  return simple_udp_app::GetTypeID();
+  return FairUdpApp::GetTypeID();
 }
 
-simple_udp_app::simple_udp_app()
+FairUdpApp::FairUdpApp()
 {
   port_ = 7777;
 }
 
-simple_udp_app::~simple_udp_app()
+FairUdpApp::~FairUdpApp()
 {
   socket_->Close();
 }
 
 void
-simple_udp_app::setup_receive_socket(Ptr<Socket> socket, port_t port)    
+FairUdpApp::SetupReceiveSocket(Ptr<Socket> socket, port_t port)    
 {
   InetSocketAddress local = InetSocketAddress(Ipv4Address::GetAny(), port);
   if (socket->Bind(local) == -1)
@@ -67,42 +67,42 @@ simple_udp_app::setup_receive_socket(Ptr<Socket> socket, port_t port)
 }
 
 void
-simple_udp_app::StartApplication()    
+FairUdpApp::StartApplication()    
 {
   auto tid = TypeId::LookupByName("ns3::UdpSocketFactory");
   socket_ = Socket::CreateSocket(GetNode(), tid);
 
-  setup_receive_socket(socket_, port_);
+  SetupReceiveSocket(socket_, port_);
 
-  socket_->SetRecvCallback(MakeCallback(&simple_udp_app::receive_handler, this));
+  socket_->SetRecvCallback(MakeCallback(&FairUdpApp::ReceiveHandler, this));
 
   socket_ = Socket::CreateSocket(GetNode(), tid);
 }
 
 void
-simple_udp_app::receive_handler(Ptr<Socket> socket)
+FairUdpApp::ReceiveHandler(Ptr<Socket> socket)
 {
   NS_LOG_FUNCTION(this << socket);
   Address from;
 
   if (auto packet = socket->RecvFrom(from))
     {
-      fair_udp_header header;
+      FairUdpHeader header;
       packet->RemoveHeader(header);
 
       NS_LOG_INFO("Handle message (size): " << packet->GetSize()
-                  << " Sequence Number: " << header.get_data()
+                  << " Sequence Number: " << header.GetData()
                   << " at time " << Now().GetSeconds());
       NS_LOG_INFO(packet->ToString());
     }
 }
 
 void
-simple_udp_app::send_msg(Ptr<Packet> packet, Ipv4Address dest, port_t port)
+FairUdpApp::SendMsg(Ptr<Packet> packet, Ipv4Address dest, port_t port)
 {
   NS_LOG_FUNCTION(this << packet << dest << port);
-  fair_udp_header header;
-  header.set_data(seq_number_++);
+  FairUdpHeader header;
+  header.SetData(seq_number_++);
   packet->AddHeader(header);
 
   socket_->SendTo(packet, 0, InetSocketAddress(dest, port));

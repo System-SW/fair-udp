@@ -14,34 +14,34 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "fair_udp_header.h"
+#include "fair-udp-header.h"
 
 using namespace ns3;
 
 TypeId
-fair_udp_header::GetTypeId()
+FairUdpHeader::GetTypeId()
 {
-  static TypeId tid = TypeId("ns3::fair_udp_header")
+  static TypeId tid = TypeId("ns3::FairUdpHeader")
     .SetParent<Header>()
-    .AddConstructor<fair_udp_header>()
+    .AddConstructor<FairUdpHeader>()
     ;
   return tid;
 }
 
 TypeId
-fair_udp_header::GetInstanceTypeId() const
+FairUdpHeader::GetInstanceTypeId() const
 {
   return GetTypeId();
 }
 
 uint32_t
-fair_udp_header::GetSerializedSize() const
+FairUdpHeader::GetSerializedSize() const
 {
   return 6;
 }
 
 void
-fair_udp_header::Serialize(Buffer::Iterator start) const
+FairUdpHeader::Serialize(Buffer::Iterator start) const
 {
   // 2 bytes first
   start.WriteU8(0xfe);
@@ -52,7 +52,7 @@ fair_udp_header::Serialize(Buffer::Iterator start) const
 }
 
 uint32_t
-fair_udp_header::Deserialize(Buffer::Iterator start)
+FairUdpHeader::Deserialize(Buffer::Iterator start)
 {
   uint8_t tmp = start.ReadU8();
   NS_ASSERT(tmp == 0xfe);
@@ -63,19 +63,19 @@ fair_udp_header::Deserialize(Buffer::Iterator start)
 }
 
 void
-fair_udp_header::Print(std::ostream &os) const
+FairUdpHeader::Print(std::ostream &os) const
 {
   os << "Data = " << data_;
 }
 
 void
-fair_udp_header::set_data(uint32_t data)
+FairUdpHeader::SetData(uint32_t data)
 {
   data_ = data;
 }
 
 uint32_t
-fair_udp_header::get_data() const
+FairUdpHeader::GetData() const
 {
   return data_;
 }

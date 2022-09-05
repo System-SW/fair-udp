@@ -23,7 +23,7 @@
 #include "ns3/wifi-module.h"
 #include "ns3/mobility-module.h"
 #include "ns3/internet-module.h"
-#include "udp_app.h"
+#include "fair-udp.h"
 #include <string>
 
 using namespace ns3;
@@ -36,26 +36,26 @@ enum special_nodes
     P2P_SERVER = 1,
   };
 
-class udp_app_helper
+class FairUdphelper
 {
 public:
-  udp_app_helper(Ptr<simple_udp_app> client, Ipv4Address dest, port_t port):
+  FairUdphelper(Ptr<FairUdpApp> client, Ipv4Address dest, port_t port):
     client_{client}, dest_{dest}, port_{port}
   {
   }
 
   void
-  send_packet(size_t data_len)
+  SendPacket(size_t data_len)
   {
     auto packet = Create<Packet>(data_len);
 
-    Simulator::Schedule(MilliSeconds(100), &simple_udp_app::send_msg, client_, packet, dest_, port_);
-    Simulator::Schedule(MilliSeconds(100), &udp_app_helper::send_packet, this, data_len);
+    Simulator::Schedule(MilliSeconds(100), &FairUdpApp::SendMsg, client_, packet, dest_, port_);
+    Simulator::Schedule(MilliSeconds(100), &FairUdphelper::SendPacket, this, data_len);
   }
 
 private:
 
-  Ptr<simple_udp_app> client_;
+  Ptr<FairUdpApp> client_;
   Ipv4Address dest_;
   port_t port_;
 };   
@@ -126,23 +126,23 @@ main(int argc, char *argv[])
   address.Assign(apDevices);
 
   // assign apps to endpoints
-  auto client = CreateObject<simple_udp_app>();
+  auto client = CreateObject<FairUdpApp>();
   auto client_node = wifiStaNodes.Get(0);
   client_node->AddApplication(client);
   client->SetStartTime(Seconds(0));
   client->SetStopTime(Seconds(10));
 
-  auto server = CreateObject<simple_udp_app>();
+  auto server = CreateObject<FairUdpApp>();
   auto server_node = p2pNodes.Get(special_nodes::P2P_SERVER);
   server_node->AddApplication(server);
 
 
-  udp_app_helper app_helper(client, p2pInterfaces.GetAddress(special_nodes::P2P_SERVER), 7777);
-  app_helper.send_packet(1024);
+  FairUdphelper app_helper(client, p2pInterfaces.GetAddress(special_nodes::P2P_SERVER), 7777);
+  app_helper.SendPacket(1024);
 
 
   Ipv4GlobalRoutingHelper::PopulateRoutingTables();
-  LogComponentEnable("simple_udp_app", LOG_LEVEL_INFO);
+  LogComponentEnable("FairUdpApp", LOG_LEVEL_INFO);
 
   Simulator::Stop(Seconds(10.0));
 
