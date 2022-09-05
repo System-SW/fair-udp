@@ -12,6 +12,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * Author: Chang-Hui Kim <kch9001@gmail.com>
  */
 
 #include "fair-udp-header.h"
@@ -43,39 +45,46 @@ FairUdpHeader::GetSerializedSize() const
 void
 FairUdpHeader::Serialize(Buffer::Iterator start) const
 {
-  // 2 bytes first
-  start.WriteU8(0xfe);
-  start.WriteU8(0xef);
+  // write protocol id
+  start.WriteU32(PROTOCOL_ID);
 
-  // data part
-  start.WriteHtonU32(data_);
+  // write protocol bit field
+  start.WriteHtonU32(bit_field_);
 }
 
 uint32_t
 FairUdpHeader::Deserialize(Buffer::Iterator start)
 {
-  uint8_t tmp = start.ReadU8();
-  NS_ASSERT(tmp == 0xfe);
-  tmp = start.ReadU8();
-  NS_ASSERT(tmp == 0xef);
-  data_ = start.ReadNtohU32();
-  return 6; // the number of bytes consumed
+  NS_ASSERT(PROTOCOL_ID == start.ReadU32()); // check Protocol ID
+  bit_field_ = start.ReadNtohU32();          // read bit_field
+
+  return sizeof(uint32_t) * 2; // the number of bytes consumed
 }
 
 void
 FairUdpHeader::Print(std::ostream &os) const
 {
-  os << "Data = " << data_;
+  os << " Sequence Number: " << GetSequence()
+     << " NACK=" << IsOn<Bit::NACK>()
+     << " Reset=" << IsOn<Bit::RESET>();
+}
+
+FairUdpHeader &
+FairUdpHeader::operator |= (Bit bit)    
+{
+  bit_field_ |= static_cast<uint32_t>(bit);
+  return *this;
 }
 
 void
-FairUdpHeader::SetData(uint32_t data)
+FairUdpHeader::SetSequence(uint16_t seq)
 {
-  data_ = data;
+  bit_field_ &= 0xFFFF0000;     // clean up seq number
+  bit_field_ |= seq;            // set seq number
 }
 
-uint32_t
-FairUdpHeader::GetData() const
+uint16_t
+FairUdpHeader::GetSequence() const
 {
-  return data_;
+  return static_cast<uint16_t>(bit_field_ & 0x0000FFFF);
 }

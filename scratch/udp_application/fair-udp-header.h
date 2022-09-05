@@ -12,7 +12,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * Author: Chang-Hui Kim <kch9001@gmail.com>
  */
+
 #ifndef FAIR_UDP_HEADER_H
 #define FAIR_UDP_HEADER_H
 
@@ -20,21 +23,44 @@
 
 namespace ns3
 {
+  /*
+    | Protocol ID   (32 bit)                                |
+    |-------------------------------------------------------|
+    | 1 bit | 1 bit | 14bit (preserved) | 16 bit (unsigned) |
+    |-------+-------+-------------------+-------------------|
+    | NACK  | RESET |                   | Sequence Number   |
+   */
   class FairUdpHeader : public Header
   {
   public:
-    static TypeId GetTypeId();
-    virtual TypeId GetInstanceTypeId() const override;
-    virtual uint32_t GetSerializedSize() const override;
-    virtual void Serialize(Buffer::Iterator start) const override;
-    virtual uint32_t Deserialize(Buffer::Iterator start) override;
-    virtual void Print(std::ostream& os) const override;
+    static constexpr uint32_t PROTOCOL_ID = 0x12345678;
+    enum class Bit: uint32_t
+      {
+        NACK = 0x1 << 30,       // use enclosed sequence number in the next message
+        RESET = 0x1 << 29,      // request reset sequence number to 0
+      };
 
-    void SetData(uint32_t data);
-    uint32_t GetData() const;
+    static TypeId GetTypeId();
+    TypeId GetInstanceTypeId() const override;
+    uint32_t GetSerializedSize() const override;
+    void Serialize(Buffer::Iterator start) const override;
+    uint32_t Deserialize(Buffer::Iterator start) override;
+    void Print(std::ostream& os) const override;
+
+    // method for set bit_field_
+    FairUdpHeader& operator |= (Bit bit);
+
+    template <Bit bit>
+    bool IsOn() const
+    {
+      return bit_field_ & static_cast<uint32_t>(bit);
+    }
+
+    void SetSequence(uint16_t seq);
+    uint16_t GetSequence() const;
 
   private:
-    uint32_t data_;
+    uint32_t bit_field_{0};
   };
 }    
 
