@@ -45,12 +45,12 @@ public:
   }
 
   void
-  SendPacket(size_t data_len)
+  SendPacket(std::string buffer)
   {
-    auto packet = Create<Packet>(data_len);
+    auto packet = Create<Packet>(reinterpret_cast<uint8_t *>(buffer.data()), buffer.size());
 
     Simulator::Schedule(MilliSeconds(100), &FairUdpApp::SendMsg, client_, packet, dest_, port_);
-    Simulator::Schedule(MilliSeconds(100), &FairUdphelper::SendPacket, this, data_len);
+    Simulator::Schedule(MilliSeconds(100), &FairUdphelper::SendPacket, this, buffer);
   }
 
 private:
@@ -136,9 +136,11 @@ main(int argc, char *argv[])
   auto server_node = p2pNodes.Get(special_nodes::P2P_SERVER);
   server_node->AddApplication(server);
 
+  Packet::EnablePrinting();
 
+  std::string msg{"Hello World"};
   FairUdphelper app_helper(client, p2pInterfaces.GetAddress(special_nodes::P2P_SERVER), 7777);
-  app_helper.SendPacket(1024);
+  app_helper.SendPacket(msg);
 
 
   Ipv4GlobalRoutingHelper::PopulateRoutingTables();

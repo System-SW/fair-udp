@@ -34,6 +34,7 @@ namespace ns3
   {
   public:
     static constexpr uint32_t PROTOCOL_ID = 0x12345678;
+    static constexpr size_t HEADER_SIZE = 2 * sizeof(uint32_t);
     enum class Bit: uint32_t
       {
         NACK = 0x1 << 30,       // use enclosed sequence number in the next message

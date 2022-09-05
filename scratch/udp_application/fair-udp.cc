@@ -12,6 +12,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ *
+ * Author: Chang-Hui Kim <kch9001@gmail.com>
  */
 
 #include "ns3/log.h"
@@ -91,7 +93,7 @@ FairUdpApp::ReceiveHandler(Ptr<Socket> socket)
       packet->RemoveHeader(header);
 
       NS_LOG_INFO("Handle message (size): " << packet->GetSize()
-                  << " Sequence Number: " << header.GetData()
+                  << header
                   << " at time " << Now().GetSeconds());
       NS_LOG_INFO(packet->ToString());
     }
@@ -101,8 +103,9 @@ void
 FairUdpApp::SendMsg(Ptr<Packet> packet, Ipv4Address dest, port_t port)
 {
   NS_LOG_FUNCTION(this << packet << dest << port);
+
   FairUdpHeader header;
-  header.SetData(seq_number_++);
+  header.SetSequence(seq_number_++);
   packet->AddHeader(header);
 
   socket_->SendTo(packet, 0, InetSocketAddress(dest, port));

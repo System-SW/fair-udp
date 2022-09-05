@@ -39,7 +39,7 @@ FairUdpHeader::GetInstanceTypeId() const
 uint32_t
 FairUdpHeader::GetSerializedSize() const
 {
-  return 6;
+  return HEADER_SIZE; // the number of bytes consumed
 }
 
 void
@@ -58,7 +58,7 @@ FairUdpHeader::Deserialize(Buffer::Iterator start)
   NS_ASSERT(PROTOCOL_ID == start.ReadU32()); // check Protocol ID
   bit_field_ = start.ReadNtohU32();          // read bit_field
 
-  return sizeof(uint32_t) * 2; // the number of bytes consumed
+  return HEADER_SIZE; // the number of bytes consumed
 }
 
 void
