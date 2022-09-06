@@ -69,7 +69,7 @@ main(int argc, char *argv[])
   auto p2pDevices = pointToPoint.Install(p2pNodes);
 
   // wifi part
-  NodeContainer wifiStaNodes(3);
+  NodeContainer wifiStaNodes(30);
   auto wifiApNode = p2pNodes.Get(special_nodes::WIFI_AP);
 
   auto channel = YansWifiChannelHelper::Default();
@@ -124,7 +124,9 @@ main(int argc, char *argv[])
 
 
   FairUdpHelper please(InetSocketAddress(p2pInterfaces.GetAddress(special_nodes::P2P_SERVER), 7777));
-  DummyStream s("hello world");
+  std::string msg;
+  msg.resize(1024);
+  DummyStream s(msg);
 
   auto clients = please.Install(wifiStaNodes);
 
@@ -132,7 +134,7 @@ main(int argc, char *argv[])
   {
     client->SetStartTime(Seconds(0));
     client->SetStopTime(Seconds(10));
-    Simulator::Schedule(Seconds(1), &FairUdpApp::SendStream, static_cast<FairUdpApp *>(&*client), &s);
+    Simulator::Schedule(MilliSeconds(10), &FairUdpApp::SendStream, static_cast<FairUdpApp *>(&*client), &s);
   });
 
 
