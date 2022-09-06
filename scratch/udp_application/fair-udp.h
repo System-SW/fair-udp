@@ -48,6 +48,19 @@ namespace ns3
   {
   public:
     virtual Ptr<Packet> GetPacket() = 0;
+    virtual ~PacketSource() {}
+  };
+
+  class CongestionInfo
+  {
+  public:
+    CongestionInfo();
+    CongestionInfo(uint64_t msg_size);
+    void PacketDropDetected();
+    uint64_t GetTransferInterval();
+  private:
+    uint64_t bandwidth_{1};     // 1 kb
+    uint64_t msg_size_{1024};   // 1 kb
   };
 
   class FairUdpApp : public Application
@@ -73,6 +86,7 @@ namespace ns3
     uint16_t seq_number_{0};
     Address dest_;
     std::unordered_map<Address, connection, AddressHash> connections_;
+    CongestionInfo congestion_info_;
   };
   
 } // namespace ns3

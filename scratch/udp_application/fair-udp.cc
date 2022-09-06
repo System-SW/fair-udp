@@ -94,6 +94,7 @@ FairUdpApp::ReceiveHandler(Ptr<Socket> socket)
           // reset my sequence number to the requested number
           seq_number_ = header.GetSequence();
           // XXX: need congestion control below -> reduce transmission bandwidth
+          congestion_info_.PacketDropDetected();
         }
       else if (header.IsOn<FairUdpHeader::Bit::RESET>()) // server side
         {
@@ -159,5 +160,36 @@ FairUdpApp::SendStream(PacketSource* in)
 {
   // XXX: get next sending time interval and schedule it.
   SendMsg(in->GetPacket());
-  Simulator::Schedule(Seconds(1), &FairUdpApp::SendStream, this, in);
+  auto interval = congestion_info_.GetTransferInterval();
+  Simulator::Schedule(MilliSeconds(interval), &FairUdpApp::SendStream, this, in);
+}
+
+CongestionInfo::CongestionInfo(uint64_t msg_size):
+  msg_size_(msg_size)
+{
+}
+
+CongestionInfo::CongestionInfo() {}
+
+void
+CongestionInfo::PacketDropDetected()
+{
+  bandwidth_ /= 2;
+  if (bandwidth_ == 0)
+    {
+      bandwidth_ = 1;
+    }
+}
+
+uint64_t
+CongestionInfo::GetTransferInterval()
+{
+  auto prev_bandwidth = bandwidth_;
+  bandwidth_++;
+  auto interval = msg_size_ / prev_bandwidth;
+  if (interval < 10)
+    {
+      interval = 100;
+    }
+  return interval;
 }
