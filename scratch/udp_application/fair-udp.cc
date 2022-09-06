@@ -74,12 +74,6 @@ FairUdpApp::StartApplication()
   auto tid = TypeId::LookupByName("ns3::UdpSocketFactory");
   socket_ = Socket::CreateSocket(GetNode(), tid);
 
-  if (!dest_.IsInvalid())       // destination is configured (this is client)
-    {
-      socket_->Connect(dest_);
-      NS_LOG_FUNCTION(this << InetSocketAddress::ConvertFrom(dest_).GetIpv4()
-                      << InetSocketAddress::ConvertFrom(dest_).GetPort());
-    }
   SetupReceiveSocket(port_);
   socket_->SetRecvCallback(MakeCallback(&FairUdpApp::ReceiveHandler, this));
 }
@@ -134,7 +128,7 @@ FairUdpApp::SendMsg(Ptr<Packet> packet)
   header.SetSequence(seq_number_++);
   packet->AddHeader(header);
 
-  socket_->Send(packet);
+  socket_->SendTo(packet, 0, InetSocketAddress::ConvertFrom(dest_));
 }
 
 void
