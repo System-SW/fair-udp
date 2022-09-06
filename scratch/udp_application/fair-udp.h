@@ -16,8 +16,8 @@
  * Author: Chang-Hui Kim <kch9001@gmail.com>
  */
 
-#ifndef UDP_APP_H
-#define UDP_APP_H
+#ifndef FAIR_UDP_H
+#define FAIR_UDP_H
 
 #include "ns3/socket.h"
 #include "ns3/application.h"
@@ -80,4 +80,4 @@ namespace ns3
   
 } // namespace ns3
 
-#endif /* UDP_APP_H */
+#endif /* FAIR_UDP_H */
