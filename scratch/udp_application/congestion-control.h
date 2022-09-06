@@ -20,19 +20,40 @@
 #define CONGESTION_CONTROL_H
 
 #include <cstdint>
+#include "ns3/gnuplot.h"
+#include "ns3/timer.h"
 
 namespace ns3
 {
+  struct BandwidthInfo
+  {
+    BandwidthInfo();
+    void Add(uint64_t bytes);
+    void Start();
+
+    Gnuplot2dDataset bandwidth_data_;
+  private:
+    void Update();
+
+    Time start_;
+    uint64_t transferred_bytes_{0};
+  };
+
+
   class CongestionInfo
   {
   public:
     CongestionInfo();
     CongestionInfo(uint64_t msg_size);
-    void PacketDropDetected();
+    void PacketDropDetected(uint16_t nack_seq);
     uint64_t GetTransferInterval();
+    BandwidthInfo bandwidth_info_;
   private:
     uint64_t bandwidth_{1};     // 1 kb
     uint64_t msg_size_{1024};   // 1 kb
+    uint64_t threshhold_{1};    // 1 kb
+    uint8_t nack_counter_{0};
+    uint16_t prev_nack_seq_{0};
   };
 }    
 

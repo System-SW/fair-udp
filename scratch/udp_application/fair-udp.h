@@ -63,6 +63,7 @@ namespace ns3
 
     void SendStream(PacketSource *in);
     void SetDestAddr(Address dest);
+    void Draw();
   private:
     void ReceiveHandler(Ptr<Socket> socket);
     void SetupReceiveSocket(port_t port);

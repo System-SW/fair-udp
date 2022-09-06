@@ -25,6 +25,7 @@
 #include "ns3/arp-header.h"
 #include "ns3/ipv4-header.h"
 #include "fair-udp-header.h"
+#include <fstream>
 
 
 using namespace ns3;
@@ -76,6 +77,7 @@ FairUdpApp::StartApplication()
 
   SetupReceiveSocket(port_);
   socket_->SetRecvCallback(MakeCallback(&FairUdpApp::ReceiveHandler, this));
+  congestion_info_.bandwidth_info_.Start();
 }
 
 void
@@ -94,7 +96,7 @@ FairUdpApp::ReceiveHandler(Ptr<Socket> socket)
           // reset my sequence number to the requested number
           seq_number_ = header.GetSequence();
           // XXX: need congestion control below -> reduce transmission bandwidth
-          congestion_info_.PacketDropDetected();
+          congestion_info_.PacketDropDetected(seq_number_);
         }
       else if (header.IsOn<FairUdpHeader::Bit::RESET>()) // server side
         {
@@ -162,4 +164,15 @@ FairUdpApp::SendStream(PacketSource* in)
   SendMsg(in->GetPacket());
   auto interval = congestion_info_.GetTransferInterval();
   Simulator::Schedule(MilliSeconds(interval), &FairUdpApp::SendStream, this, in);
+}
+
+void
+FairUdpApp::Draw()
+{
+  Gnuplot plot("test.png");
+  plot.SetLegend("Time", "Bandwidth");
+  plot.AppendExtra("set xrange [0:+100]");
+  plot.AddDataset(congestion_info_.bandwidth_info_.bandwidth_data_);
+  std::ofstream out("test.plt");
+  plot.GenerateOutput(out);
 }

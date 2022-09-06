@@ -56,6 +56,11 @@ private:
   std::string msg_;
 };
 
+void draw_please(FairUdpApp* client)
+{
+  client->Draw();
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -63,7 +68,7 @@ main(int argc, char *argv[])
   NodeContainer p2pNodes(2);
 
   PointToPointHelper pointToPoint;
-  pointToPoint.SetDeviceAttribute("DataRate", StringValue("100Mbps"));
+  pointToPoint.SetDeviceAttribute("DataRate", StringValue("10Mbps"));
   pointToPoint.SetChannelAttribute("Delay", StringValue("1ms"));
 
   auto p2pDevices = pointToPoint.Install(p2pNodes);
@@ -129,12 +134,14 @@ main(int argc, char *argv[])
   DummyStream s(msg);
 
   auto clients = please.Install(wifiStaNodes);
+  double jitter = 0.1;
 
-  std::for_each(clients.Begin(), clients.End(), [&s](auto client)
+  std::for_each(clients.Begin(), clients.End(), [&s, &jitter](auto client)
   {
     client->SetStartTime(Seconds(0));
-    client->SetStopTime(Seconds(10));
-    Simulator::Schedule(MilliSeconds(10), &FairUdpApp::SendStream, static_cast<FairUdpApp *>(&*client), &s);
+    client->SetStopTime(Seconds(100));
+    Simulator::Schedule(Seconds(jitter), &FairUdpApp::SendStream, static_cast<FairUdpApp *>(&*client), &s);
+    jitter += 0.05;
   });
 
 
@@ -147,9 +154,14 @@ main(int argc, char *argv[])
   Ipv4GlobalRoutingHelper::PopulateRoutingTables();
   LogComponentEnable("FairUdpApp", LOG_LEVEL_INFO);
 
-  Simulator::Stop(Seconds(10.0));
+  Simulator::Stop(Seconds(100));
 
   Simulator::Run();
   Simulator::Destroy();
+
+  auto client = clients.Get(10);
+
+  draw_please(dynamic_cast<FairUdpApp *>(&*client));
+
   return 0;
 }

@@ -17,24 +17,39 @@
  */
 
 #include "congestion-control.h"
+#include "ns3/core-module.h"
+#include <numeric>
 
 using namespace ns3;
 
+NS_LOG_COMPONENT_DEFINE("CongestionInfo");
 
 CongestionInfo::CongestionInfo(uint64_t msg_size):
-  msg_size_(msg_size)
+  CongestionInfo()
+{
+  msg_size_ = msg_size;
+}
+
+CongestionInfo::CongestionInfo()
 {
 }
 
-CongestionInfo::CongestionInfo() {}
-
 void
-CongestionInfo::PacketDropDetected()
+CongestionInfo::PacketDropDetected(uint16_t nack_seq)
 {
-  bandwidth_ /= 2;
-  if (bandwidth_ == 0)
+  if (prev_nack_seq_ != nack_seq)
     {
-      bandwidth_ = 1;
+      nack_counter_ = 0;
+      prev_nack_seq_ = nack_seq;
+    }
+
+  nack_counter_++;
+  if (nack_counter_ == 3)
+    {
+      threshhold_ = bandwidth_ / 2;
+      NS_LOG_INFO("threshhold " << threshhold_);
+      bandwidth_ = 1;           // slow start
+      nack_counter_ = 0;
     }
 }
 
@@ -42,11 +57,52 @@ uint64_t
 CongestionInfo::GetTransferInterval()
 {
   auto prev_bandwidth = bandwidth_;
-  bandwidth_++;
-  auto interval = msg_size_ / prev_bandwidth;
-  if (interval < 1)
+
+  if (bandwidth_ < threshhold_)
     {
-      interval = 100;
+      bandwidth_ *= 2;
     }
+  else
+    {
+      bandwidth_++;
+    }
+
+  auto interval = msg_size_ / prev_bandwidth;
+  if (interval == 0)
+    {
+      bandwidth_ = msg_size_;
+      interval = 1;
+    }
+  bandwidth_info_.Add(msg_size_);
   return interval;
+}
+
+BandwidthInfo::BandwidthInfo()
+{
+  start_ = Now();
+  bandwidth_data_.SetTitle("Fair UDP Bandwidth");
+  bandwidth_data_.SetStyle(Gnuplot2dDataset::LINES_POINTS);
+}
+
+void
+BandwidthInfo::Start()
+{
+  start_ = Now();
+  Simulator::Schedule(MilliSeconds(100), &BandwidthInfo::Update, this);
+}
+
+void
+BandwidthInfo::Update()
+{
+  auto duration = Now() - start_;
+  bandwidth_data_.Add(Now().GetSeconds(), (double)transferred_bytes_ / duration.GetMilliSeconds()); // kb/s now
+  transferred_bytes_ = 0;
+  start_ = Now();
+  Simulator::Schedule(MilliSeconds(100), &BandwidthInfo::Update, this);
+}
+
+void
+BandwidthInfo::Add(uint64_t bytes)
+{
+  transferred_bytes_ += bytes;
 }
