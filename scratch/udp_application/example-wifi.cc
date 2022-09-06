@@ -24,7 +24,9 @@
 #include "ns3/mobility-module.h"
 #include "ns3/internet-module.h"
 #include "fair-udp.h"
+#include "fair-udp-helper.h"
 #include <string>
+#include <algorithm>
 
 using namespace ns3;
 
@@ -120,16 +122,19 @@ main(int argc, char *argv[])
   address.Assign(staDevices);
   address.Assign(apDevices);
 
-  // assign apps to endpoints
-  auto client = CreateObject<FairUdpApp>();
-  client->SetDestAddr(InetSocketAddress(p2pInterfaces.GetAddress(special_nodes::P2P_SERVER), 7777));
-  auto client_node = wifiStaNodes.Get(0);
-  client_node->AddApplication(client);
-  client->SetStartTime(Seconds(0));
-  client->SetStopTime(Seconds(10));
 
+  FairUdpHelper please(InetSocketAddress(p2pInterfaces.GetAddress(special_nodes::P2P_SERVER), 7777));
   DummyStream s("hello world");
-  Simulator::Schedule(Seconds(1), &FairUdpApp::SendStream, client, &s);
+
+  auto clients = please.Install(wifiStaNodes);
+
+  std::for_each(clients.Begin(), clients.End(), [&s](auto client)
+  {
+    client->SetStartTime(Seconds(0));
+    client->SetStopTime(Seconds(10));
+    Simulator::Schedule(Seconds(1), &FairUdpApp::SendStream, static_cast<FairUdpApp *>(&*client), &s);
+  });
+
 
   auto server = CreateObject<FairUdpApp>();
   auto server_node = p2pNodes.Get(special_nodes::P2P_SERVER);
