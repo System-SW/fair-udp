@@ -36,27 +36,23 @@ enum special_nodes
     P2P_SERVER = 1,
   };
 
-class FairUdphelper
+class DummyStream : public PacketSource
 {
 public:
-  FairUdphelper(Ptr<FairUdpApp> client):
-    client_{client}
+  DummyStream(std::string msg):
+    msg_(msg)
   {
   }
 
-  void
-  SendPacket(std::string buffer)
+  Ptr<Packet>
+  GetPacket() override
   {
-    auto packet = Create<Packet>(reinterpret_cast<uint8_t *>(buffer.data()), buffer.size());
-
-    Simulator::Schedule(MilliSeconds(100), &FairUdpApp::SendMsg, client_, packet);
-    Simulator::Schedule(MilliSeconds(100), &FairUdphelper::SendPacket, this, buffer);
+    auto packet = Create<Packet>(reinterpret_cast<uint8_t *>(msg_.data()), msg_.size());
+    return packet;
   }
-
 private:
-
-  Ptr<FairUdpApp> client_;
-};   
+  std::string msg_;
+};
 
 int
 main(int argc, char *argv[])
@@ -129,19 +125,17 @@ main(int argc, char *argv[])
   client->SetDestAddr(InetSocketAddress(p2pInterfaces.GetAddress(special_nodes::P2P_SERVER), 7777));
   auto client_node = wifiStaNodes.Get(0);
   client_node->AddApplication(client);
-  client->SetStartTime(Seconds(1));
+  client->SetStartTime(Seconds(0));
   client->SetStopTime(Seconds(10));
+
+  DummyStream s("hello world");
+  Simulator::Schedule(Seconds(1), &FairUdpApp::SendStream, client, &s);
 
   auto server = CreateObject<FairUdpApp>();
   auto server_node = p2pNodes.Get(special_nodes::P2P_SERVER);
   server_node->AddApplication(server);
 
   Packet::EnablePrinting();
-
-  std::string msg{"Hello World"};
-  FairUdphelper app_helper(client);
-  Simulator::Schedule(Seconds(1), &FairUdphelper::SendPacket, &app_helper, msg);
-
 
   Ipv4GlobalRoutingHelper::PopulateRoutingTables();
   LogComponentEnable("FairUdpApp", LOG_LEVEL_INFO);

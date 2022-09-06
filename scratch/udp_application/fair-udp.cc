@@ -93,7 +93,7 @@ FairUdpApp::ReceiveHandler(Ptr<Socket> socket)
         {
           // reset my sequence number to the requested number
           seq_number_ = header.GetSequence();
-          // need congestion control below -> reduce transmission bandwidth
+          // XXX: need congestion control below -> reduce transmission bandwidth
         }
       else if (header.IsOn<FairUdpHeader::Bit::RESET>()) // server side
         {
@@ -152,4 +152,12 @@ FairUdpApp::SetDestAddr(Address dest)
 {
   NS_ABORT_IF(!InetSocketAddress::IsMatchingType(dest));
   dest_ = dest;
+}
+
+void
+FairUdpApp::SendStream(PacketSource* in)
+{
+  // XXX: get next sending time interval and schedule it.
+  SendMsg(in->GetPacket());
+  Simulator::Schedule(Seconds(1), &FairUdpApp::SendStream, this, in);
 }

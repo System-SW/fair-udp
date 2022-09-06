@@ -44,6 +44,12 @@ namespace ns3
     uint16_t sequence_number{0};
   };
 
+  class PacketSource
+  {
+  public:
+    virtual Ptr<Packet> GetPacket() = 0;
+  };
+
   class FairUdpApp : public Application
   {
   public:
@@ -53,14 +59,14 @@ namespace ns3
     static TypeId GetTypeID();
     TypeId GetInstanceTypeId() const override;
 
-    void ReceiveHandler(Ptr<Socket> socket);
-    void SendMsg(Ptr<Packet> packet);
-
+    void SendStream(PacketSource *in);
     void SetDestAddr(Address dest);
   private:
+    void ReceiveHandler(Ptr<Socket> socket);
     void SetupReceiveSocket(port_t port);
     void StartApplication() override;
     void SendNACK(Address dest);
+    void SendMsg(Ptr<Packet> packet);
 
     Ptr<Socket> socket_;
     port_t port_;
