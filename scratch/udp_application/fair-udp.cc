@@ -163,33 +163,3 @@ FairUdpApp::SendStream(PacketSource* in)
   auto interval = congestion_info_.GetTransferInterval();
   Simulator::Schedule(MilliSeconds(interval), &FairUdpApp::SendStream, this, in);
 }
-
-CongestionInfo::CongestionInfo(uint64_t msg_size):
-  msg_size_(msg_size)
-{
-}
-
-CongestionInfo::CongestionInfo() {}
-
-void
-CongestionInfo::PacketDropDetected()
-{
-  bandwidth_ /= 2;
-  if (bandwidth_ == 0)
-    {
-      bandwidth_ = 1;
-    }
-}
-
-uint64_t
-CongestionInfo::GetTransferInterval()
-{
-  auto prev_bandwidth = bandwidth_;
-  bandwidth_++;
-  auto interval = msg_size_ / prev_bandwidth;
-  if (interval < 10)
-    {
-      interval = 100;
-    }
-  return interval;
-}

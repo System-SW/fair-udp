@@ -21,6 +21,7 @@
 
 #include "ns3/socket.h"
 #include "ns3/application.h"
+#include "congestion-control.h"
 #include <unordered_map>
 
 
@@ -49,18 +50,6 @@ namespace ns3
   public:
     virtual Ptr<Packet> GetPacket() = 0;
     virtual ~PacketSource() {}
-  };
-
-  class CongestionInfo
-  {
-  public:
-    CongestionInfo();
-    CongestionInfo(uint64_t msg_size);
-    void PacketDropDetected();
-    uint64_t GetTransferInterval();
-  private:
-    uint64_t bandwidth_{1};     // 1 kb
-    uint64_t msg_size_{1024};   // 1 kb
   };
 
   class FairUdpApp : public Application
