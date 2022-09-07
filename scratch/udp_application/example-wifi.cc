@@ -23,6 +23,7 @@
 #include "ns3/wifi-module.h"
 #include "ns3/mobility-module.h"
 #include "ns3/internet-module.h"
+#include "ns3/random-variable-stream.h"
 #include "fair-udp.h"
 #include "fair-udp-helper.h"
 #include <string>
@@ -58,7 +59,9 @@ private:
 
 void draw_please(FairUdpApp* client)
 {
-  client->Draw();
+  static int id = 1;
+  client->Draw("node" + std::to_string(id));
+  id++;
 }
 
 int
@@ -134,14 +137,15 @@ main(int argc, char *argv[])
   DummyStream s(msg);
 
   auto clients = please.Install(wifiStaNodes);
-  double jitter = 0.1;
 
-  std::for_each(clients.Begin(), clients.End(), [&s, &jitter](auto client)
+  std::for_each(clients.Begin(), clients.End(), [&s](auto client)
   {
+    SeedManager::SetSeed(client->GetNode()->GetId() + 1);
+    auto random_generator = CreateObject<UniformRandomVariable>();
+    auto jitter = random_generator->GetInteger(0, 500);
     client->SetStartTime(Seconds(0));
     client->SetStopTime(Seconds(100));
-    Simulator::Schedule(Seconds(jitter), &FairUdpApp::SendStream, static_cast<FairUdpApp *>(&*client), &s);
-    jitter += 0.05;
+    Simulator::Schedule(MilliSeconds(jitter), &FairUdpApp::SendStream, static_cast<FairUdpApp *>(&*client), &s);
   });
 
 
@@ -159,9 +163,11 @@ main(int argc, char *argv[])
   Simulator::Run();
   Simulator::Destroy();
 
-  auto client = clients.Get(10);
 
-  draw_please(dynamic_cast<FairUdpApp *>(&*client));
+  std::for_each(clients.Begin(), clients.End(), [](auto client)
+  {
+    draw_please(dynamic_cast<FairUdpApp *>(&*client));
+  });
 
   return 0;
 }

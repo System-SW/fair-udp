@@ -167,12 +167,12 @@ FairUdpApp::SendStream(PacketSource* in)
 }
 
 void
-FairUdpApp::Draw()
+FairUdpApp::Draw(std::string png_name)
 {
-  Gnuplot plot("test.png");
+  Gnuplot plot(png_name + ".png");
   plot.SetLegend("Time", "Bandwidth");
   plot.AppendExtra("set xrange [0:+100]");
   plot.AddDataset(congestion_info_.bandwidth_info_.bandwidth_data_);
-  std::ofstream out("test.plt");
+  std::ofstream out(png_name + ".plt");
   plot.GenerateOutput(out);
 }
