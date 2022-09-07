@@ -44,12 +44,11 @@ CongestionInfo::PacketDropDetected(uint16_t nack_seq)
     }
 
   nack_counter_++;
-  if (nack_counter_ == 3)
+  if (nack_counter_ >= 2)
     {
       threshhold_ = bandwidth_ / 2;
       NS_LOG_INFO("threshhold " << threshhold_);
       bandwidth_ = 1;           // slow start
-      nack_counter_ = 0;
     }
 }
 

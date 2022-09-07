@@ -51,7 +51,7 @@ namespace ns3
   private:
     uint64_t bandwidth_{1};     // 1 kb
     uint64_t msg_size_{1024};   // 1 kb
-    uint64_t threshhold_{1};    // 1 kb
+    uint64_t threshhold_{10};    // 10 kb
     uint8_t nack_counter_{0};
     uint16_t prev_nack_seq_{0};
   };
