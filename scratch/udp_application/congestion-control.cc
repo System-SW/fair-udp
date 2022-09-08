@@ -96,8 +96,8 @@ BandwidthInfo::Update()
 {
   auto duration = Now() - start_;
   bandwidth_data_.Add(Now().GetSeconds(), (double)transferred_bytes_ / duration.GetMilliSeconds()); // kb/s now
-  transferred_bytes_ = 0;
-  start_ = Now();
+  // transferred_bytes_ = 0;
+  // start_ = Now();
   Simulator::Schedule(MilliSeconds(AVERAGE_INTERVAL), &BandwidthInfo::Update, this);
 }
 
