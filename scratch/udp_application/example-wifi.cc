@@ -26,6 +26,7 @@
 #include "ns3/random-variable-stream.h"
 #include "fair-udp.h"
 #include "fair-udp-helper.h"
+#include "config.h"
 #include <string>
 #include <algorithm>
 
@@ -137,17 +138,17 @@ main(int argc, char *argv[])
   DummyStream s(msg);
 
   auto clients = please.Install(wifiStaNodes);
+  SeedManager::SetSeed(13);
 
   std::for_each(clients.Begin(), clients.End(), [&s](auto client)
   {
-    SeedManager::SetSeed(client->GetNode()->GetId() + 1);
     auto random_generator = CreateObject<UniformRandomVariable>();
     auto jitter = random_generator->GetInteger(0, 500);
     client->SetStartTime(Seconds(0));
-    client->SetStopTime(Seconds(100));
     Simulator::Schedule(MilliSeconds(jitter), &FairUdpApp::SendStream, static_cast<FairUdpApp *>(&*client), &s);
   });
 
+  clients.Stop(Seconds(TEST_TIME));
 
   auto server = CreateObject<FairUdpApp>();
   auto server_node = p2pNodes.Get(special_nodes::P2P_SERVER);
@@ -158,16 +159,16 @@ main(int argc, char *argv[])
   Ipv4GlobalRoutingHelper::PopulateRoutingTables();
   LogComponentEnable("FairUdpApp", LOG_LEVEL_INFO);
 
-  Simulator::Stop(Seconds(100));
+  Simulator::Stop(Seconds(TEST_TIME));
 
   Simulator::Run();
   Simulator::Destroy();
 
 
-  std::for_each(clients.Begin(), clients.End(), [](auto client)
-  {
-    draw_please(dynamic_cast<FairUdpApp *>(&*client));
-  });
+  // std::for_each(clients.Begin(), clients.End(), [](auto client)
+  // {
+  //   draw_please(dynamic_cast<FairUdpApp *>(&*client));
+  // });
 
   return 0;
 }

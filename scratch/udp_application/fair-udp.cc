@@ -25,8 +25,10 @@
 #include "ns3/arp-header.h"
 #include "ns3/ipv4-header.h"
 #include "fair-udp-header.h"
+#include "config.h"
 #include <fstream>
-
+#include <algorithm>
+#include <string>
 
 using namespace ns3;
 
@@ -57,6 +59,17 @@ FairUdpApp::FairUdpApp()
 FairUdpApp::~FairUdpApp()
 {
   socket_->Close();
+
+  int i = 0;
+  std::for_each(connections_.begin(), connections_.end(), [this, &i](auto conn)
+  {
+    Gnuplot plot(std::to_string(i) + ".png");
+    plot.SetLegend("Time", "Bandwidth");
+    plot.AppendExtra(XRANGE);
+    plot.AddDataset(conn.second.bandwidth_info_.bandwidth_data_);
+    std::ofstream out(std::to_string(i++) + ".plt");
+    plot.GenerateOutput(out);
+  });
 }
 
 void
@@ -95,7 +108,6 @@ FairUdpApp::ReceiveHandler(Ptr<Socket> socket)
         {
           // reset my sequence number to the requested number
           seq_number_ = header.GetSequence();
-          // XXX: need congestion control below -> reduce transmission bandwidth
           congestion_info_.PacketDropDetected(seq_number_);
         }
       else if (header.IsOn<FairUdpHeader::Bit::RESET>()) // server side
@@ -104,6 +116,13 @@ FairUdpApp::ReceiveHandler(Ptr<Socket> socket)
         }
       else  // handle received message (server side)
         {
+          if (connections_.find(from) == connections_.end())
+            {
+              NS_LOG_DEBUG("Connected");
+              connections_[from].bandwidth_info_.Start();
+            }
+          connections_[from].bandwidth_info_.Add(packet->GetSize());
+
           if (connections_[from].sequence_number == header.GetSequence()) // expected sequence number
             {
               connections_[from].sequence_number++;
@@ -116,9 +135,9 @@ FairUdpApp::ReceiveHandler(Ptr<Socket> socket)
             }
         }
 
-      NS_LOG_INFO("Handle message (size): " << packet->GetSize()
-                  << header
-                  << " at time " << Now().GetSeconds());
+      // NS_LOG_INFO("Handle message (size): " << packet->GetSize()
+      //             << header
+      //             << " at time " << Now().GetSeconds());
     }
 }
 
@@ -160,7 +179,6 @@ FairUdpApp::SetDestAddr(Address dest)
 void
 FairUdpApp::SendStream(PacketSource* in)
 {
-  // XXX: get next sending time interval and schedule it.
   SendMsg(in->GetPacket());
   auto interval = congestion_info_.GetTransferInterval();
   Simulator::Schedule(MilliSeconds(interval), &FairUdpApp::SendStream, this, in);
@@ -171,7 +189,7 @@ FairUdpApp::Draw(std::string png_name)
 {
   Gnuplot plot(png_name + ".png");
   plot.SetLegend("Time", "Bandwidth");
-  plot.AppendExtra("set xrange [0:+100]");
+  plot.AppendExtra(XRANGE);
   plot.AddDataset(congestion_info_.bandwidth_info_.bandwidth_data_);
   std::ofstream out(png_name + ".plt");
   plot.GenerateOutput(out);

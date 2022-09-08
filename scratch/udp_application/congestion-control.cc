@@ -18,6 +18,7 @@
 
 #include "congestion-control.h"
 #include "ns3/core-module.h"
+#include "config.h"
 #include <numeric>
 
 using namespace ns3;
@@ -87,7 +88,7 @@ void
 BandwidthInfo::Start()
 {
   start_ = Now();
-  Simulator::Schedule(MilliSeconds(100), &BandwidthInfo::Update, this);
+  Simulator::Schedule(MilliSeconds(AVERAGE_INTERVAL), &BandwidthInfo::Update, this);
 }
 
 void
@@ -97,7 +98,7 @@ BandwidthInfo::Update()
   bandwidth_data_.Add(Now().GetSeconds(), (double)transferred_bytes_ / duration.GetMilliSeconds()); // kb/s now
   transferred_bytes_ = 0;
   start_ = Now();
-  Simulator::Schedule(MilliSeconds(100), &BandwidthInfo::Update, this);
+  Simulator::Schedule(MilliSeconds(AVERAGE_INTERVAL), &BandwidthInfo::Update, this);
 }
 
 void

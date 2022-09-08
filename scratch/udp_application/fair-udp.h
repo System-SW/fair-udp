@@ -40,9 +40,10 @@ namespace ns3
     }
   };
 
-  struct connection
+  struct Connection
   {
     uint16_t sequence_number{0};
+    BandwidthInfo bandwidth_info_;
   };
 
   class PacketSource
@@ -75,7 +76,7 @@ namespace ns3
     port_t port_;
     uint16_t seq_number_{0};
     Address dest_;
-    std::unordered_map<Address, connection, AddressHash> connections_;
+    std::unordered_map<Address, Connection, AddressHash> connections_;
     CongestionInfo congestion_info_;
   };
   
