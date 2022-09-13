@@ -72,13 +72,13 @@ main(int argc, char *argv[])
   NodeContainer p2pNodes(2);
 
   PointToPointHelper pointToPoint;
-  pointToPoint.SetDeviceAttribute("DataRate", StringValue("10Mbps"));
+  pointToPoint.SetDeviceAttribute("DataRate", StringValue("1Gbps"));
   pointToPoint.SetChannelAttribute("Delay", StringValue("1ms"));
 
   auto p2pDevices = pointToPoint.Install(p2pNodes);
 
   // wifi part
-  NodeContainer wifiStaNodes(30);
+  NodeContainer wifiStaNodes(UAV_NUM);
   auto wifiApNode = p2pNodes.Get(special_nodes::WIFI_AP);
 
   auto channel = YansWifiChannelHelper::Default();

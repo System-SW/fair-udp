@@ -20,6 +20,7 @@
 
 namespace ns3
 {
+  constexpr unsigned int UAV_NUM = 60;
   constexpr uint32_t TEST_TIME = 120; /* seconds */
   constexpr uint32_t AVERAGE_INTERVAL = 2000; /* ms */
   constexpr const char *XRANGE = "set xrange [0:+120]";
