@@ -24,7 +24,6 @@
 #include "ns3/ethernet-header.h"
 #include "ns3/arp-header.h"
 #include "ns3/ipv4-header.h"
-#include "fair-udp-header.h"
 #include "config.h"
 #include <fstream>
 #include <algorithm>
@@ -130,7 +129,7 @@ FairUdpApp::ReceiveHandler(Ptr<Socket> socket)
           else       // packet drop occurred
             {
               NS_LOG_INFO(InetSocketAddress::ConvertFrom(from).GetIpv4() << " "
-                           << header.GetSequence() << " != " << connections_[from].sequence_number);
+                          << uint16_t(header.GetSequence()) << " != " << uint16_t(connections_[from].sequence_number));
               SendNACK(from);
             }
         }

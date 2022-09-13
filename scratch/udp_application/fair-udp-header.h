@@ -26,12 +26,17 @@ namespace ns3
   /*
     | Protocol ID   (32 bit)                                |
     |-------------------------------------------------------|
-    | 1 bit | 1 bit | 14bit (preserved) | 16 bit (unsigned) |
+    | 1 bit | 1 bit | 22bit (preserved) |  8 bit (unsigned) |
     |-------+-------+-------------------+-------------------|
     | NACK  | RESET |                   | Sequence Number   |
    */
+
+
+  using sequence_t = uint8_t;
   class FairUdpHeader : public Header
   {
+    static constexpr uint32_t SEQ_MASK = (sequence_t(~0u));
+    static constexpr uint32_t OPT_MASK = ~SEQ_MASK;
   public:
     static constexpr uint32_t PROTOCOL_ID = 0x12345678;
     static constexpr size_t HEADER_SIZE = 2 * sizeof(uint32_t);
@@ -57,8 +62,8 @@ namespace ns3
       return (bit_field_ & static_cast<uint32_t>(bit)) != 0;
     }
 
-    void SetSequence(uint16_t seq);
-    uint16_t GetSequence() const;
+    void SetSequence(sequence_t seq);
+    sequence_t GetSequence() const;
 
   private:
     uint32_t bit_field_{0};

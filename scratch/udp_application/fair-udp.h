@@ -22,6 +22,7 @@
 #include "ns3/socket.h"
 #include "ns3/application.h"
 #include "congestion-control.h"
+#include "fair-udp-header.h"
 #include <unordered_map>
 
 
@@ -42,7 +43,7 @@ namespace ns3
 
   struct Connection
   {
-    uint16_t sequence_number{0};
+    sequence_t sequence_number{0};
     BandwidthInfo bandwidth_info_;
   };
 
@@ -74,7 +75,7 @@ namespace ns3
 
     Ptr<Socket> socket_;
     port_t port_;
-    uint16_t seq_number_{0};
+    sequence_t seq_number_{0};
     Address dest_;
     std::unordered_map<Address, Connection, AddressHash> connections_;
     CongestionInfo congestion_info_;
