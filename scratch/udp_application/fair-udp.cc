@@ -129,7 +129,8 @@ FairUdpApp::ReceiveHandler(Ptr<Socket> socket)
           else       // packet drop occurred
             {
               NS_LOG_INFO(InetSocketAddress::ConvertFrom(from).GetIpv4() << " "
-                          << uint16_t(header.GetSequence()) << " != " << uint16_t(connections_[from].sequence_number));
+                          << uint16_t(header.GetSequence()) << " != " << uint16_t(connections_[from].sequence_number)
+                          << " Seconds: " << Now().GetSeconds());
               SendNACK(from);
             }
         }
@@ -164,7 +165,7 @@ FairUdpApp::SendNACK(Address dest)
 
   NS_ABORT_IF(!InetSocketAddress::IsMatchingType(dest));
   auto ipv4_address = InetSocketAddress::ConvertFrom(dest);
-  NS_LOG_INFO(this << packet << ipv4_address.GetIpv4() << ipv4_address.GetPort());
+  NS_LOG_INFO(this << packet << ipv4_address.GetIpv4());
   socket_->SendTo(packet, 0, ipv4_address);
 }
 

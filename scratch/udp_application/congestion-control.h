@@ -22,6 +22,7 @@
 #include <cstdint>
 #include "ns3/gnuplot.h"
 #include "ns3/timer.h"
+#include "fair-udp-header.h"
 
 namespace ns3
 {
@@ -45,7 +46,7 @@ namespace ns3
   public:
     CongestionInfo();
     CongestionInfo(uint64_t msg_size);
-    void PacketDropDetected(uint16_t nack_seq);
+    void PacketDropDetected(sequence_t nack_seq);
     uint64_t GetTransferInterval();
     BandwidthInfo bandwidth_info_;
   private:
@@ -53,7 +54,7 @@ namespace ns3
     uint64_t msg_size_{1024};   // 1 kb
     uint64_t threshhold_{10};    // 10 kb
     uint8_t nack_counter_{0};
-    uint16_t prev_nack_seq_{0};
+    sequence_t prev_nack_seq_{0};
   };
 }    
 

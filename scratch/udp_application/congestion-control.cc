@@ -36,20 +36,20 @@ CongestionInfo::CongestionInfo()
 }
 
 void
-CongestionInfo::PacketDropDetected(uint16_t nack_seq)
+CongestionInfo::PacketDropDetected(sequence_t nack_seq)
 {
-  if (prev_nack_seq_ != nack_seq)
+  if (prev_nack_seq_ != nack_seq) // new nack seq
     {
       nack_counter_ = 0;
       prev_nack_seq_ = nack_seq;
     }
 
   nack_counter_++;
-  if (nack_counter_ >= 2)
+  if (nack_counter_ == 2)
     {
       threshhold_ = bandwidth_ / 2;
       NS_LOG_INFO("threshhold " << threshhold_);
-      bandwidth_ = 1;           // slow start
+      bandwidth_ = threshhold_;           // slow start
     }
 }
 
@@ -96,8 +96,8 @@ BandwidthInfo::Update()
 {
   auto duration = Now() - start_;
   bandwidth_data_.Add(Now().GetSeconds(), (double)transferred_bytes_ / duration.GetMilliSeconds()); // kb/s now
-  // transferred_bytes_ = 0;
-  // start_ = Now();
+  transferred_bytes_ = 0;
+  start_ = Now();
   Simulator::Schedule(MilliSeconds(AVERAGE_INTERVAL), &BandwidthInfo::Update, this);
 }
 
