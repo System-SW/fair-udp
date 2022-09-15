@@ -24,6 +24,7 @@
 #include "ns3/mobility-module.h"
 #include "ns3/internet-module.h"
 #include "ns3/random-variable-stream.h"
+#include "ns3/udp-client-server-helper.h"
 #include "fair-udp.h"
 #include "fair-udp-helper.h"
 #include "config.h"
@@ -72,7 +73,7 @@ main(int argc, char *argv[])
   NodeContainer p2pNodes(2);
 
   PointToPointHelper pointToPoint;
-  pointToPoint.SetDeviceAttribute("DataRate", StringValue("1Gbps"));
+  pointToPoint.SetDeviceAttribute("DataRate", StringValue("100Mbps"));
   pointToPoint.SetChannelAttribute("Delay", StringValue("1ms"));
 
   auto p2pDevices = pointToPoint.Install(p2pNodes);
@@ -84,7 +85,6 @@ main(int argc, char *argv[])
   auto channel = YansWifiChannelHelper::Default();
   auto phy = YansWifiPhyHelper();
   phy.SetChannel(channel.Create());
-  phy.SetErrorRateModel("ns3::YansErrorRateModel");
 
   WifiMacHelper mac;
   auto ssid = Ssid("ns-3-ssid");
@@ -101,20 +101,23 @@ main(int argc, char *argv[])
 
   // mobility for stas
   MobilityHelper mobility;
-  mobility.SetPositionAllocator("ns3::GridPositionAllocator",
-                                "MinX", DoubleValue(0.0),
-                                "MinY", DoubleValue(0.0),
-                                "DeltaX", DoubleValue(5.0),
-                                "GridWidth", UintegerValue(3),
-                                "LayoutType", StringValue("RowFirst"));
+  mobility.SetPositionAllocator("ns3::UniformDiscPositionAllocator",
+                                "rho", DoubleValue(10.0),
+                                "X", DoubleValue(50),
+                                "Y", DoubleValue(50));
 
-  mobility.SetMobilityModel("ns3::RandomWalk2dMobilityModel",
-                            "Bounds", RectangleValue(Rectangle(-50, 50, -50, 50)));
+  mobility.SetMobilityModel("ns3::RandomWalk2dMobilityModel");
+  // mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
   mobility.Install(wifiStaNodes);
 
+
   // mobility for ap
-  mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
-  mobility.Install(wifiApNode);
+  MobilityHelper mobility_ap;
+  auto position_alloc = CreateObject<ListPositionAllocator>();
+  position_alloc->Add(Vector(50, 50, 0));
+  mobility_ap.SetPositionAllocator(position_alloc);
+  mobility_ap.SetMobilityModel("ns3::ConstantPositionMobilityModel");
+  mobility_ap.Install(wifiApNode);
 
   // internet setting
   InternetStackHelper stack;
@@ -131,39 +134,67 @@ main(int argc, char *argv[])
   address.Assign(staDevices);
   address.Assign(apDevices);
 
+  if constexpr (TARGET_PROTO == FAIR_UDP)
+    {
+      FairUdpHelper please(InetSocketAddress(p2pInterfaces.GetAddress(special_nodes::P2P_SERVER), 7777));
+      std::string msg;
+      msg.resize(1024);
+      DummyStream s(msg);
 
-  FairUdpHelper please(InetSocketAddress(p2pInterfaces.GetAddress(special_nodes::P2P_SERVER), 7777));
-  std::string msg;
-  msg.resize(1024);
-  DummyStream s(msg);
+      auto clients = please.Install(wifiStaNodes);
 
-  auto clients = please.Install(wifiStaNodes);
-  SeedManager::SetSeed(13);
+      SeedManager::SetSeed(1423);
+      std::for_each(clients.Begin(), clients.End(), [&s](auto client)
+      {
+        auto random_generator = CreateObject<UniformRandomVariable>();
+        auto jitter = random_generator->GetInteger(0, 1000);
+        client->SetStartTime(Seconds(0));
+        Simulator::Schedule(MilliSeconds(jitter), &FairUdpApp::SendStream, static_cast<FairUdpApp *>(&*client), &s);
+      });
 
-  std::for_each(clients.Begin(), clients.End(), [&s](auto client)
-  {
-    auto random_generator = CreateObject<UniformRandomVariable>();
-    auto jitter = random_generator->GetInteger(0, 500);
-    client->SetStartTime(Seconds(0));
-    Simulator::Schedule(MilliSeconds(jitter), &FairUdpApp::SendStream, static_cast<FairUdpApp *>(&*client), &s);
-  });
+      clients.Stop(Seconds(TEST_TIME));
 
-  clients.Stop(Seconds(TEST_TIME));
+      auto server = CreateObject<FairUdpApp>();
+      auto server_node = p2pNodes.Get(special_nodes::P2P_SERVER);
+      server_node->AddApplication(server);
+      LogComponentEnable("FairUdpApp", LOG_LEVEL_INFO);
 
-  auto server = CreateObject<FairUdpApp>();
-  auto server_node = p2pNodes.Get(special_nodes::P2P_SERVER);
-  server_node->AddApplication(server);
+      // generate trace file
+      phy.SetPcapDataLinkType(WifiPhyHelper::DLT_IEEE802_11_RADIO);
+      pointToPoint.EnablePcapAll("fair-udp");
+      phy.EnablePcap("fair-udp", apDevices.Get(special_nodes::WIFI_AP));
+    }
+  else                          // udp for now
+    {
+      UdpServerHelper server(7777);
+      auto apps = server.Install(p2pNodes.Get(special_nodes::P2P_SERVER));
+      apps.Start(Seconds(0));
+      apps.Stop(Seconds(TEST_TIME));
 
-  Packet::EnablePrinting();
+      uint32_t max_packet_size = 1024;
+      Time interval = MilliSeconds(1);
+      uint32_t max_packet_count = UINT32_MAX;
+      auto server_addr = p2pInterfaces.GetAddress(special_nodes::P2P_SERVER);
+      UdpClientHelper client(server_addr, 7777);
+      client.SetAttribute ("MaxPackets", UintegerValue (max_packet_count));
+      client.SetAttribute ("Interval", TimeValue (interval));
+      client.SetAttribute ("PacketSize", UintegerValue (max_packet_size));
+      apps = client.Install(wifiStaNodes);
+      apps.Start(Seconds(0));
+      apps.Stop(Seconds(TEST_TIME));
+
+      // generate trace file
+      phy.SetPcapDataLinkType(WifiPhyHelper::DLT_IEEE802_11_RADIO);
+      pointToPoint.EnablePcapAll("normal-udp");
+      phy.EnablePcap("normal-udp", apDevices.Get(special_nodes::WIFI_AP));
+    }
+
 
   Ipv4GlobalRoutingHelper::PopulateRoutingTables();
-  LogComponentEnable("FairUdpApp", LOG_LEVEL_INFO);
 
   Simulator::Stop(Seconds(TEST_TIME));
-
   Simulator::Run();
   Simulator::Destroy();
-
 
   // std::for_each(clients.Begin(), clients.End(), [](auto client)
   // {
