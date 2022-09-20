@@ -58,17 +58,6 @@ FairUdpApp::FairUdpApp()
 FairUdpApp::~FairUdpApp()
 {
   socket_->Close();
-
-  int i = 0;
-  std::for_each(connections_.begin(), connections_.end(), [this, &i](auto conn)
-  {
-    Gnuplot plot(std::to_string(i) + ".png");
-    plot.SetLegend("Time", "Bandwidth");
-    plot.AppendExtra(XRANGE);
-    plot.AddDataset(conn.second.bandwidth_info_.bandwidth_data_);
-    std::ofstream out(std::to_string(i++) + ".plt");
-    plot.GenerateOutput(out);
-  });
 }
 
 void
@@ -89,7 +78,6 @@ FairUdpApp::StartApplication()
 
   SetupReceiveSocket(port_);
   socket_->SetRecvCallback(MakeCallback(&FairUdpApp::ReceiveHandler, this));
-  congestion_info_.bandwidth_info_.Start();
 }
 
 void
@@ -118,9 +106,7 @@ FairUdpApp::ReceiveHandler(Ptr<Socket> socket)
           if (connections_.find(from) == connections_.end())
             {
               NS_LOG_DEBUG("Connected");
-              connections_[from].bandwidth_info_.Start();
             }
-          connections_[from].bandwidth_info_.Add(packet->GetSize());
 
           if (connections_[from].sequence_number == header.GetSequence()) // expected sequence number
             {
@@ -182,15 +168,4 @@ FairUdpApp::SendStream(PacketSource* in)
   SendMsg(in->GetPacket());
   auto interval = congestion_info_.GetTransferInterval();
   Simulator::Schedule(MilliSeconds(interval), &FairUdpApp::SendStream, this, in);
-}
-
-void
-FairUdpApp::Draw(std::string png_name)
-{
-  Gnuplot plot(png_name + ".png");
-  plot.SetLegend("Time", "Bandwidth");
-  plot.AppendExtra(XRANGE);
-  plot.AddDataset(congestion_info_.bandwidth_info_.bandwidth_data_);
-  std::ofstream out(png_name + ".plt");
-  plot.GenerateOutput(out);
 }

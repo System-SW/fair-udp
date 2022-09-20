@@ -44,7 +44,6 @@ namespace ns3
   struct Connection
   {
     sequence_t sequence_number{0};
-    BandwidthInfo bandwidth_info_;
   };
 
   class PacketSource
@@ -65,7 +64,6 @@ namespace ns3
 
     void SendStream(PacketSource *in);
     void SetDestAddr(Address dest);
-    void Draw(std::string png_name);
   private:
     void ReceiveHandler(Ptr<Socket> socket);
     void SetupReceiveSocket(port_t port);

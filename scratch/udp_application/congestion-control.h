@@ -26,21 +26,6 @@
 
 namespace ns3
 {
-  struct BandwidthInfo
-  {
-    BandwidthInfo();
-    void Add(uint64_t bytes);
-    void Start();
-
-    Gnuplot2dDataset bandwidth_data_;
-  private:
-    void Update();
-
-    Time start_;
-    uint64_t transferred_bytes_{0};
-  };
-
-
   class CongestionInfo
   {
   public:
@@ -48,7 +33,6 @@ namespace ns3
     CongestionInfo(uint64_t msg_size);
     void PacketDropDetected(sequence_t nack_seq);
     uint64_t GetTransferInterval();
-    BandwidthInfo bandwidth_info_;
   private:
     uint64_t bandwidth_{1};     // 1 kb
     uint64_t msg_size_{1024};   // 1 kb

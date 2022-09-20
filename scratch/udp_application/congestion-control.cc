@@ -73,36 +73,5 @@ CongestionInfo::GetTransferInterval()
       bandwidth_ = msg_size_;
       interval = 1;
     }
-  bandwidth_info_.Add(msg_size_);
   return interval;
-}
-
-BandwidthInfo::BandwidthInfo()
-{
-  start_ = Now();
-  bandwidth_data_.SetTitle("Fair UDP Bandwidth");
-  bandwidth_data_.SetStyle(Gnuplot2dDataset::LINES_POINTS);
-}
-
-void
-BandwidthInfo::Start()
-{
-  start_ = Now();
-  Simulator::Schedule(MilliSeconds(AVERAGE_INTERVAL), &BandwidthInfo::Update, this);
-}
-
-void
-BandwidthInfo::Update()
-{
-  auto duration = Now() - start_;
-  bandwidth_data_.Add(Now().GetSeconds(), (double)transferred_bytes_ / duration.GetMilliSeconds()); // kb/s now
-  transferred_bytes_ = 0;
-  start_ = Now();
-  Simulator::Schedule(MilliSeconds(AVERAGE_INTERVAL), &BandwidthInfo::Update, this);
-}
-
-void
-BandwidthInfo::Add(uint64_t bytes)
-{
-  transferred_bytes_ += bytes;
 }
