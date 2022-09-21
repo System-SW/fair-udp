@@ -38,19 +38,12 @@ CongestionInfo::CongestionInfo()
 void
 CongestionInfo::PacketDropDetected(sequence_t nack_seq)
 {
-  if (prev_nack_seq_ != nack_seq) // new nack seq
+  threshhold_ = bandwidth_ / 2;
+  if (!threshhold_)
     {
-      nack_counter_ = 0;
-      prev_nack_seq_ = nack_seq;
+      threshhold_ = 1;
     }
-
-  nack_counter_++;
-  if (nack_counter_ == 1)
-    {
-      threshhold_ = bandwidth_ / 2;
-      NS_LOG_INFO("threshhold " << threshhold_);
-      bandwidth_ = threshhold_;           // slow start
-    }
+  bandwidth_ = threshhold_;
 }
 
 uint64_t
@@ -73,36 +66,12 @@ CongestionInfo::GetTransferInterval()
       bandwidth_ = msg_size_;
       interval = 1;
     }
-  bandwidth_info_.Add(msg_size_);
   return interval;
 }
 
-BandwidthInfo::BandwidthInfo()
-{
-  start_ = Now();
-  bandwidth_data_.SetTitle("Fair UDP Bandwidth");
-  bandwidth_data_.SetStyle(Gnuplot2dDataset::LINES_POINTS);
-}
-
 void
-BandwidthInfo::Start()
+CongestionInfo::ReduceBandwidth()
 {
-  start_ = Now();
-  Simulator::Schedule(MilliSeconds(AVERAGE_INTERVAL), &BandwidthInfo::Update, this);
-}
-
-void
-BandwidthInfo::Update()
-{
-  auto duration = Now() - start_;
-  bandwidth_data_.Add(Now().GetSeconds(), (double)transferred_bytes_ / duration.GetMilliSeconds()); // kb/s now
-  transferred_bytes_ = 0;
-  start_ = Now();
-  Simulator::Schedule(MilliSeconds(AVERAGE_INTERVAL), &BandwidthInfo::Update, this);
-}
-
-void
-BandwidthInfo::Add(uint64_t bytes)
-{
-  transferred_bytes_ += bytes;
+  threshhold_ = bandwidth_ / 2;
+  bandwidth_ = threshhold_ ? threshhold_ : 1;
 }

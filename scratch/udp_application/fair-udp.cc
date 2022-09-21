@@ -34,6 +34,35 @@ using namespace ns3;
 NS_LOG_COMPONENT_DEFINE("FairUdpApp");
 NS_OBJECT_ENSURE_REGISTERED(FairUdpApp);
 
+static bool
+ValidateSequence(sequence_t my_sequence, FairUdpHeader header)
+{
+  if ((my_sequence + header.GetSequence()) % 2 == 0)
+    {
+      if (my_sequence != header.GetSequence())
+        {
+          return false;
+        }
+      else
+        {
+          // correct packet
+          return true;
+        }
+    }
+  else
+    {
+      if (my_sequence > header.GetSequence())
+        {
+          // reordered packet
+          return true;
+        }
+      else
+        {
+          return false;
+        }
+    }
+}
+
 TypeId
 FairUdpApp::GetTypeID()
 {
@@ -58,17 +87,6 @@ FairUdpApp::FairUdpApp()
 FairUdpApp::~FairUdpApp()
 {
   socket_->Close();
-
-  int i = 0;
-  std::for_each(connections_.begin(), connections_.end(), [this, &i](auto conn)
-  {
-    Gnuplot plot(std::to_string(i) + ".png");
-    plot.SetLegend("Time", "Bandwidth");
-    plot.AppendExtra(XRANGE);
-    plot.AddDataset(conn.second.bandwidth_info_.bandwidth_data_);
-    std::ofstream out(std::to_string(i++) + ".plt");
-    plot.GenerateOutput(out);
-  });
 }
 
 void
@@ -89,7 +107,6 @@ FairUdpApp::StartApplication()
 
   SetupReceiveSocket(port_);
   socket_->SetRecvCallback(MakeCallback(&FairUdpApp::ReceiveHandler, this));
-  congestion_info_.bandwidth_info_.Start();
 }
 
 void
@@ -106,38 +123,37 @@ FairUdpApp::ReceiveHandler(Ptr<Socket> socket)
       if (header.IsOn<FairUdpHeader::Bit::NACK>()) // client side
         {
           // reset my sequence number to the requested number
-          seq_number_ = header.GetSequence();
-          congestion_info_.PacketDropDetected(seq_number_);
+          if ((seq_number_ + header.GetSequence()) % 2 != 0 && seq_number_ < header.GetSequence())
+            {
+              seq_number_ = header.GetSequence();
+              congestion_info_.PacketDropDetected(seq_number_);
+            }
         }
-      else if (header.IsOn<FairUdpHeader::Bit::RESET>()) // server side
+      else if (header.IsOn<FairUdpHeader::Bit::RESET>()) // client side
         {
-          connections_[from].sequence_number = 0;
+          reset_received_ = true;
         }
       else  // handle received message (server side)
         {
           if (connections_.find(from) == connections_.end())
             {
               NS_LOG_DEBUG("Connected");
-              connections_[from].bandwidth_info_.Start();
             }
-          connections_[from].bandwidth_info_.Add(packet->GetSize());
 
-          if (connections_[from].sequence_number == header.GetSequence()) // expected sequence number
+          if (ValidateSequence(connections_[from].sequence_number, header))
+            {
+              connections_[from].sequence_number += 2;
+            }
+          else
             {
               connections_[from].sequence_number++;
-            }
-          else       // packet drop occurred
-            {
-              NS_LOG_INFO(InetSocketAddress::ConvertFrom(from).GetIpv4() << " "
-                          << uint16_t(header.GetSequence()) << " != " << uint16_t(connections_[from].sequence_number)
-                          << " Seconds: " << Now().GetSeconds());
               SendNACK(from);
             }
+          if (connections_[from].sequence_number < 2) // every sequence overflow send reset
+            {
+              SendReset(from);
+            }
         }
-
-      // NS_LOG_INFO("Handle message (size): " << packet->GetSize()
-      //             << header
-      //             << " at time " << Now().GetSeconds());
     }
 }
 
@@ -147,8 +163,18 @@ FairUdpApp::SendMsg(Ptr<Packet> packet)
   NS_LOG_FUNCTION(this << packet << InetSocketAddress::ConvertFrom(dest_).GetIpv4());
 
   FairUdpHeader header;
-  header.SetSequence(seq_number_++);
+  header.SetSequence(seq_number_);
+  seq_number_ += 2;
   packet->AddHeader(header);
+
+  if (seq_number_ < 2)          // overflowed
+    {
+      if (!reset_received_)
+        {
+          congestion_info_.ReduceBandwidth();
+        }
+      reset_received_ = false;
+    }
 
   socket_->SendTo(packet, 0, InetSocketAddress::ConvertFrom(dest_));
 }
@@ -185,12 +211,17 @@ FairUdpApp::SendStream(PacketSource* in)
 }
 
 void
-FairUdpApp::Draw(std::string png_name)
+FairUdpApp::SendReset(Address dest)
 {
-  Gnuplot plot(png_name + ".png");
-  plot.SetLegend("Time", "Bandwidth");
-  plot.AppendExtra(XRANGE);
-  plot.AddDataset(congestion_info_.bandwidth_info_.bandwidth_data_);
-  std::ofstream out(png_name + ".plt");
-  plot.GenerateOutput(out);
+  auto packet = Create<Packet>();
+
+  FairUdpHeader header;
+  header.SetSequence(connections_[dest].sequence_number);
+  header |= FairUdpHeader::Bit::RESET;
+  packet->AddHeader(header);
+
+  NS_ABORT_IF(!InetSocketAddress::IsMatchingType(dest));
+  auto ipv4_address = InetSocketAddress::ConvertFrom(dest);
+  NS_LOG_INFO(this << packet << ipv4_address.GetIpv4());
+  socket_->SendTo(packet, 0, ipv4_address);
 }
