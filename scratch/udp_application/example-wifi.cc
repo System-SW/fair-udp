@@ -244,8 +244,8 @@ int main (int argc, char *argv[])
         }
 
       auto tcpClient = tcpClientHelper.Install (*iter).Get (0);
-      tcpClient->SetAttribute ("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=5]"));
-      tcpClient->SetAttribute ("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=5]"));
+      tcpClient->SetAttribute ("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=10]"));
+      tcpClient->SetAttribute ("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=10]"));
       tcpClient->SetStartTime (Seconds (0));
       clientApps.Add (tcpClient);
     }
