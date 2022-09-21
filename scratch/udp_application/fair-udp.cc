@@ -35,27 +35,19 @@ NS_LOG_COMPONENT_DEFINE("FairUdpApp");
 NS_OBJECT_ENSURE_REGISTERED(FairUdpApp);
 
 static bool
-ValidateSequence(sequence_t& my_sequence, FairUdpHeader header)
+ValidateSequence(sequence_t my_sequence, FairUdpHeader header)
 {
   if ((my_sequence + header.GetSequence()) % 2 == 0)
     {
-      if (my_sequence == header.GetSequence())
-        {
-          return true;
-        }
-      else if (my_sequence < header.GetSequence())
+      if (my_sequence != header.GetSequence())
         {
           return false;
         }
       else
         {
-          return true;          // deprecated sequence
+          // Expired Packet
+          return true;
         }
-    }
-  if (my_sequence < header.GetSequence())
-    {
-      my_sequence++;
-      return false;             // resend NACK
     }
   return true;
 }
