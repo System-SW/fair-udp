@@ -45,11 +45,22 @@ ValidateSequence(sequence_t my_sequence, FairUdpHeader header)
         }
       else
         {
-          // Expired Packet
+          // correct packet
           return true;
         }
     }
-  return true;
+  else
+    {
+      if (my_sequence > header.GetSequence())
+        {
+          // reordered packet
+          return true;
+        }
+      else
+        {
+          return false;
+        }
+    }
 }
 
 TypeId
@@ -112,7 +123,7 @@ FairUdpApp::ReceiveHandler(Ptr<Socket> socket)
       if (header.IsOn<FairUdpHeader::Bit::NACK>()) // client side
         {
           // reset my sequence number to the requested number
-          if ((seq_number_ + header.GetSequence()) % 2)
+          if ((seq_number_ + header.GetSequence()) % 2 != 0 && seq_number_ < header.GetSequence())
             {
               seq_number_ = header.GetSequence();
               congestion_info_.PacketDropDetected(seq_number_);
