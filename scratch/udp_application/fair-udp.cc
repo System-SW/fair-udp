@@ -34,6 +34,32 @@ using namespace ns3;
 NS_LOG_COMPONENT_DEFINE("FairUdpApp");
 NS_OBJECT_ENSURE_REGISTERED(FairUdpApp);
 
+static bool
+ValidateSequence(sequence_t& my_sequence, FairUdpHeader header)
+{
+  if ((my_sequence + header.GetSequence()) % 2 == 0)
+    {
+      if (my_sequence == header.GetSequence())
+        {
+          return true;
+        }
+      else if (my_sequence < header.GetSequence())
+        {
+          return false;
+        }
+      else
+        {
+          return true;          // deprecated sequence
+        }
+    }
+  if (my_sequence < header.GetSequence())
+    {
+      my_sequence++;
+      return false;             // resend NACK
+    }
+  return true;
+}
+
 TypeId
 FairUdpApp::GetTypeID()
 {
@@ -94,8 +120,11 @@ FairUdpApp::ReceiveHandler(Ptr<Socket> socket)
       if (header.IsOn<FairUdpHeader::Bit::NACK>()) // client side
         {
           // reset my sequence number to the requested number
-          seq_number_ = header.GetSequence();
-          congestion_info_.PacketDropDetected(seq_number_);
+          if ((seq_number_ + header.GetSequence()) % 2)
+            {
+              seq_number_ = header.GetSequence();
+              congestion_info_.PacketDropDetected(seq_number_);
+            }
         }
       else if (header.IsOn<FairUdpHeader::Bit::RESET>()) // server side
         {
@@ -108,22 +137,16 @@ FairUdpApp::ReceiveHandler(Ptr<Socket> socket)
               NS_LOG_DEBUG("Connected");
             }
 
-          if (connections_[from].sequence_number == header.GetSequence()) // expected sequence number
+          if (ValidateSequence(connections_[from].sequence_number, header))
+            {
+              connections_[from].sequence_number += 2;
+            }
+          else
             {
               connections_[from].sequence_number++;
-            }
-          else       // packet drop occurred
-            {
-              NS_LOG_INFO(InetSocketAddress::ConvertFrom(from).GetIpv4() << " "
-                          << uint16_t(header.GetSequence()) << " != " << uint16_t(connections_[from].sequence_number)
-                          << " Seconds: " << Now().GetSeconds());
               SendNACK(from);
             }
         }
-
-      // NS_LOG_INFO("Handle message (size): " << packet->GetSize()
-      //             << header
-      //             << " at time " << Now().GetSeconds());
     }
 }
 
@@ -133,7 +156,8 @@ FairUdpApp::SendMsg(Ptr<Packet> packet)
   NS_LOG_FUNCTION(this << packet << InetSocketAddress::ConvertFrom(dest_).GetIpv4());
 
   FairUdpHeader header;
-  header.SetSequence(seq_number_++);
+  header.SetSequence(seq_number_);
+  seq_number_ += 2;
   packet->AddHeader(header);
 
   socket_->SendTo(packet, 0, InetSocketAddress::ConvertFrom(dest_));

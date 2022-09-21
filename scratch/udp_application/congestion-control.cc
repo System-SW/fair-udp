@@ -45,7 +45,7 @@ CongestionInfo::PacketDropDetected(sequence_t nack_seq)
     }
 
   nack_counter_++;
-  if (nack_counter_ == 2)
+  if (nack_counter_ == 1)
     {
       threshhold_ = bandwidth_ / 2;
       NS_LOG_INFO("threshhold " << threshhold_);
