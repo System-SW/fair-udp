@@ -129,9 +129,9 @@ FairUdpApp::ReceiveHandler(Ptr<Socket> socket)
               congestion_info_.PacketDropDetected(seq_number_);
             }
         }
-      else if (header.IsOn<FairUdpHeader::Bit::RESET>()) // server side
+      else if (header.IsOn<FairUdpHeader::Bit::RESET>()) // client side
         {
-          connections_[from].sequence_number = 0;
+          reset_received_ = true;
         }
       else  // handle received message (server side)
         {
@@ -149,6 +149,10 @@ FairUdpApp::ReceiveHandler(Ptr<Socket> socket)
               connections_[from].sequence_number++;
               SendNACK(from);
             }
+          if (connections_[from].sequence_number < 2) // every sequence overflow send reset
+            {
+              SendReset(from);
+            }
         }
     }
 }
@@ -162,6 +166,15 @@ FairUdpApp::SendMsg(Ptr<Packet> packet)
   header.SetSequence(seq_number_);
   seq_number_ += 2;
   packet->AddHeader(header);
+
+  if (seq_number_ < 2)          // overflowed
+    {
+      if (!reset_received_)
+        {
+          congestion_info_.ReduceBandwidth();
+        }
+      reset_received_ = false;
+    }
 
   socket_->SendTo(packet, 0, InetSocketAddress::ConvertFrom(dest_));
 }
@@ -195,4 +208,20 @@ FairUdpApp::SendStream(PacketSource* in)
   SendMsg(in->GetPacket());
   auto interval = congestion_info_.GetTransferInterval();
   Simulator::Schedule(MilliSeconds(interval), &FairUdpApp::SendStream, this, in);
+}
+
+void
+FairUdpApp::SendReset(Address dest)
+{
+  auto packet = Create<Packet>();
+
+  FairUdpHeader header;
+  header.SetSequence(connections_[dest].sequence_number);
+  header |= FairUdpHeader::Bit::RESET;
+  packet->AddHeader(header);
+
+  NS_ABORT_IF(!InetSocketAddress::IsMatchingType(dest));
+  auto ipv4_address = InetSocketAddress::ConvertFrom(dest);
+  NS_LOG_INFO(this << packet << ipv4_address.GetIpv4());
+  socket_->SendTo(packet, 0, ipv4_address);
 }

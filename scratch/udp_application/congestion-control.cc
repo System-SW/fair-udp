@@ -38,19 +38,12 @@ CongestionInfo::CongestionInfo()
 void
 CongestionInfo::PacketDropDetected(sequence_t nack_seq)
 {
-  if (prev_nack_seq_ != nack_seq) // new nack seq
+  threshhold_ = bandwidth_ / 2;
+  if (!threshhold_)
     {
-      nack_counter_ = 0;
-      prev_nack_seq_ = nack_seq;
+      threshhold_ = 1;
     }
-
-  nack_counter_++;
-  if (nack_counter_ == 1)
-    {
-      threshhold_ = bandwidth_ / 2;
-      NS_LOG_INFO("threshhold " << threshhold_);
-      bandwidth_ = threshhold_;           // slow start
-    }
+  bandwidth_ = threshhold_;
 }
 
 uint64_t
@@ -74,4 +67,11 @@ CongestionInfo::GetTransferInterval()
       interval = 1;
     }
   return interval;
+}
+
+void
+CongestionInfo::ReduceBandwidth()
+{
+  threshhold_ = bandwidth_ / 2;
+  bandwidth_ = threshhold_ ? threshhold_ : 1;
 }

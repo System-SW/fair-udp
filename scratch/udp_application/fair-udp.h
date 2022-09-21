@@ -70,6 +70,7 @@ namespace ns3
     void StartApplication() override;
     void SendNACK(Address dest);
     void SendMsg(Ptr<Packet> packet);
+    void SendReset(Address dest);
 
     Ptr<Socket> socket_;
     port_t port_;
@@ -77,6 +78,7 @@ namespace ns3
     Address dest_;
     std::unordered_map<Address, Connection, AddressHash> connections_;
     CongestionInfo congestion_info_;
+    bool reset_received_{false};
   };
   
 } // namespace ns3

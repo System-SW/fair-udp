@@ -33,6 +33,7 @@ namespace ns3
     CongestionInfo(uint64_t msg_size);
     void PacketDropDetected(sequence_t nack_seq);
     uint64_t GetTransferInterval();
+    void ReduceBandwidth();
   private:
     uint64_t bandwidth_{1};     // 1 kb
     uint64_t msg_size_{1024};   // 1 kb
