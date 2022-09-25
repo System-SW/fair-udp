@@ -16,9 +16,16 @@
  * Author: Chang-Hui Kim <kch9001@gmail.com>
  */
 
-#include "config.h"
-#include "fair-udp-helper.h"
-#include "fair-udp.h"
+#include <algorithm>
+#include <array>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <iterator>
+#include <string>
+
+#include "fudp-client-helper.h"
+#include "fudp-server-helper.h"
 #include "ns3/application-container.h"
 #include "ns3/applications-module.h"
 #include "ns3/command-line.h"
@@ -39,15 +46,18 @@
 #include "ns3/point-to-point-module.h"
 #include "ns3/random-variable-stream.h"
 #include "ns3/rng-seed-manager.h"
+#include "ns3/scheduler.h"
+#include "ns3/simulator.h"
 #include "ns3/string.h"
 #include "ns3/udp-client-server-helper.h"
+#include "ns3/udp-client.h"
 #include "ns3/wifi-module.h"
-#include <algorithm>
-#include <cstdint>
-#include <cstdlib>
-#include <iterator>
-#include <string>
-#include <array>
+
+#include "config.h"
+#include "fudp-header.h"
+#include "fudp-application.h"
+#include "fudp-client.h"
+#include "fudp-server.h"
 
 using namespace ns3;
 
@@ -57,24 +67,6 @@ enum SpecialNodes {
   WIFI_AP = 0,
   P2P_SERVER = 1,
 };
-
-class DummyStream : public PacketSource
-{
-public:
-  DummyStream (std::string msg) : msg_{msg}
-  {
-  }
-
-  Ptr<Packet> GetPacket () override;
-
-private:
-  std::string msg_;
-};
-
-Ptr<Packet> DummyStream::GetPacket ()
-{
-  return Create<Packet> (reinterpret_cast<uint8_t *> (msg_.data ()), msg_.size ());
-}
 
 int main (int argc, char *argv[])
 {
@@ -88,7 +80,7 @@ int main (int argc, char *argv[])
 
   auto cmd = CommandLine{__FILE__};
   cmd.AddValue ("protocol", "", PROTOCOL);
-  cmd.AddValue ("server-bandwidth", "", SERVER_BANDWIDTH);
+  cmd.AddValue ("server_bandwidth", "", SERVER_BANDWIDTH);
   cmd.AddValue ("uavs", "", NUM_UAVS);
   cmd.AddValue ("simul_time", "", SIMUL_TIME);
   cmd.AddValue ("exclusive_sender", "", EXCLUSIVE_SENDER);
@@ -176,31 +168,30 @@ int main (int argc, char *argv[])
   // Setup UDP clients and server
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  auto dummyData = DummyStream{::std::string (1024, '\0')};
   if (PROTOCOL == "fudp")
     {
-      p2pNodes.Get (SpecialNodes::P2P_SERVER)->AddApplication (CreateObject<FairUdpApp> ());
-      LogComponentEnable ("FairUdpApp", LOG_LEVEL_INFO);
+      constexpr auto FUDP_FEATURES = 0;
 
-      auto udpClientHelper = FairUdpHelper{serverAddress};
+      auto fudpServerHelper = FudpServerHelper<FUDP_FEATURES>{};
+      auto fudpServer = fudpServerHelper.Install (p2pNodes.Get (SpecialNodes::P2P_SERVER)).Get (0);
+      fudpServer->SetStartTime (Seconds (0));
+      fudpServer->SetStopTime (Seconds (SIMUL_TIME));
+
+      auto fudpClientHelper = FudpClientHelper<FUDP_FEATURES>{serverAddress};
+
       for (auto iter = wifiStaNodes.Begin (); iter != wifiStaNodes.End (); ++iter)
         {
-          if (EXCLUSIVE_SENDER && NUM_UAVS <= ::std::distance (wifiStaNodes.Begin (), iter))
-            {
-              break;
-            }
-
-          auto udpClient = udpClientHelper.Install (*iter).Get (0);
-          udpClient->SetStartTime (Seconds (0));
-          clientApps.Add (udpClient);
+          auto app = fudpClientHelper.Install (*iter).Get (0);
+          app->SetStartTime (Seconds (0));
+          clientApps.Add (app);
 
           auto const scheduleDelay = MilliSeconds (rng->GetInteger (0, 1000));
-          auto udpClientRawPtr = static_cast<FairUdpApp *> (&(*udpClient));
-          Simulator::Schedule (scheduleDelay, &FairUdpApp::SendStream, udpClientRawPtr, &dummyData);
+          auto &fudpClient = reinterpret_cast<FudpApplication &> (*app).GetImpl<FudpClient<FUDP_FEATURES>> ();
+          ::ns3::Simulator::Schedule (scheduleDelay, &FudpClient<FUDP_FEATURES>::SendTraffic, &fudpClient);
         }
     }
-  else // if (PROTOCOL == "udp")
-    {
+  else
+    { // if (PROTOCOL == "udp")
       auto udpServerApp = UdpServerHelper{serverPort}.Install (p2pNodes.Get (SpecialNodes::P2P_SERVER)).Get (0);
       udpServerApp->SetStartTime (Seconds (0));
       udpServerApp->SetStopTime (Seconds (SIMUL_TIME));
@@ -208,7 +199,7 @@ int main (int argc, char *argv[])
       uint32_t max_packet_size = 1024;
       auto udpClientHelper = UdpClientHelper{serverIpv4, serverPort};
       udpClientHelper.SetAttribute ("MaxPackets", UintegerValue (UINT32_MAX));
-      udpClientHelper.SetAttribute ("Interval", TimeValue (MilliSeconds (1)));
+      udpClientHelper.SetAttribute ("Interval", TimeValue (MilliSeconds (2)));
       udpClientHelper.SetAttribute ("PacketSize", UintegerValue (max_packet_size));
 
       for (auto iter = wifiStaNodes.Begin (); iter != wifiStaNodes.End (); ++iter)
@@ -244,8 +235,8 @@ int main (int argc, char *argv[])
         }
 
       auto tcpClient = tcpClientHelper.Install (*iter).Get (0);
-      tcpClient->SetAttribute ("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=10]"));
-      tcpClient->SetAttribute ("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=10]"));
+      tcpClient->SetAttribute ("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=5]"));
+      tcpClient->SetAttribute ("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=5]"));
       tcpClient->SetStartTime (Seconds (0));
       clientApps.Add (tcpClient);
     }
