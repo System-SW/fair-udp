@@ -120,6 +120,7 @@ FairUdpApp::ReceiveHandler(Ptr<Socket> socket)
               seq_number_ = header.GetSequence();
               congestion_info_.PacketDropDetected(seq_number_);
             }
+          reset_received_ = true;
         }
       else if (header.IsOn<FairUdpHeader::Bit::RESET>()) // client side
         {

@@ -78,7 +78,7 @@ namespace ns3
     Address dest_;
     std::unordered_map<Address, Connection, AddressHash> connections_;
     CongestionInfo congestion_info_;
-    bool reset_received_{false};
+    bool reset_received_{true};
   };
   
 } // namespace ns3
