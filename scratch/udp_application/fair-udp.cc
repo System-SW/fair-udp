@@ -51,15 +51,7 @@ ValidateSequence(sequence_t my_sequence, FairUdpHeader header)
     }
   else
     {
-      if (my_sequence > header.GetSequence())
-        {
-          // reordered packet
-          return true;
-        }
-      else
-        {
-          return false;
-        }
+      return false;
     }
 }
 
