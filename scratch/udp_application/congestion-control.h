@@ -22,7 +22,7 @@
 #include <cstdint>
 #include "ns3/gnuplot.h"
 #include "ns3/timer.h"
-#include "fair-udp-header.h"
+#include "fudp-header.h"
 
 namespace ns3
 {
