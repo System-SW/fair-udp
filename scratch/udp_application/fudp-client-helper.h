@@ -24,6 +24,7 @@
 
 #include "ns3/application-container.h"
 #include "ns3/application.h"
+#include "ns3/inet-socket-address.h"
 #include "ns3/ipv4-address.h"
 #include "ns3/node-container.h"
 #include "ns3/object-factory.h"
@@ -86,7 +87,7 @@ template <FudpFeature FEATURES>
 {
   auto fudpClient = ::std::make_shared<FudpClient<FEATURES>> ();
   fudpClient->SetServerAddress (_serverAddress);
-  fudpClient->SetServerPort(7777);
+  fudpClient->SetServerPort(::ns3::InetSocketAddress::ConvertFrom(_serverAddress).GetPort());
 
   auto fudpApp = _factory.Create<FudpApplication> ();
   fudpApp->SetImpl (fudpClient);

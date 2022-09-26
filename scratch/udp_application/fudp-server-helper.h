@@ -38,6 +38,8 @@ class FudpServerHelper
 public:
   FudpServerHelper ();
 
+  void SetServerPort (u16);
+
   ::ns3::ApplicationContainer Install (::ns3::Ptr<::ns3::Node> node) const;
 
   ::ns3::ApplicationContainer Install (::ns3::NodeContainer nodes) const;
@@ -53,7 +55,13 @@ private:
 template <FudpFeature FEATURES>
 FudpServerHelper<FEATURES>::FudpServerHelper () : _serverPort{}
 {
-  _factory.SetTypeId(FudpApplication::GetTypeId());
+  _factory.SetTypeId (FudpApplication::GetTypeId ());
+}
+
+template <FudpFeature FEATURES>
+void FudpServerHelper<FEATURES>::SetServerPort (u16 newServerPort)
+{
+  _serverPort = newServerPort;
 }
 
 template <FudpFeature FEATURES>
@@ -78,7 +86,7 @@ template <FudpFeature FEATURES>
 ::ns3::Ptr<::ns3::Application> FudpServerHelper<FEATURES>::InstallOne (::ns3::Ptr<::ns3::Node> node) const
 {
   auto fudpServer = ::std::make_shared<FudpServer<FEATURES>> ();
-  fudpServer->SetServerPort(7777);
+  fudpServer->SetServerPort (_serverPort);
 
   auto fudpApp = _factory.Create<FudpApplication> ();
   fudpApp->SetImpl (fudpServer);
