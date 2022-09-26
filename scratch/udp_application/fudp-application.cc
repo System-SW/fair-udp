@@ -34,6 +34,14 @@ void FudpApplication::StartApplication ()
   _impl->StartApplication ();
 }
 
+void FudpApplication::StopApplication ()
+{
+  if (_impl != nullptr)
+    {
+      _impl->StopApplication ();
+    }
+}
+
 ::ns3::TypeId FudpApplication::GetInstanceTypeId () const
 {
   return GetTypeId ();

@@ -64,6 +64,7 @@ struct FudpClientState : public FudpClientSequenceState<ContainsZigzag (FEATURES
                          public FudpClientHealthProbeState<ContainsHealthProbe (FEATURES)>
 {
   ::ns3::CongestionInfo congestionInfo;
+  bool terminated = false;
 };
 
 template <FudpFeature FEATURES>
@@ -93,6 +94,8 @@ public:
   void SendTraffic ();
 
   void StartApplication () override;
+
+  void StopApplication () override;
 
 private:
   void OnRecv (::ns3::Ptr<::ns3::Socket>);
@@ -164,6 +167,11 @@ void HandleOverflow (FudpClientState<FEATURES> &state)
 template <FudpFeature FEATURES>
 void FudpClient<FEATURES>::ScheduleTraffic ()
 {
+  if (GetState ().terminated)
+    {
+      return;
+    }
+
   auto const afterMs = GetState ().congestionInfo.GetTransferInterval ();
   ::ns3::Simulator::Schedule (::ns3::MilliSeconds (afterMs), &FudpClient<FEATURES>::SendTraffic, this);
 }
@@ -242,6 +250,14 @@ void FudpClient<FEATURES>::StartApplication ()
     }
 
   _socket->SetRecvCallback (::ns3::MakeCallback (&FudpClient<FEATURES>::OnRecv, this));
+
+  GetState ().terminated = false;
+}
+
+template <FudpFeature FEATURES>
+void FudpClient<FEATURES>::StopApplication ()
+{
+  GetState ().terminated = true;
 }
 
 #endif

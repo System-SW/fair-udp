@@ -55,6 +55,8 @@ public:
 
   virtual void StartApplication () = 0;
 
+  virtual void StopApplication() = 0;
+
 private:
   void SetContainer (FudpApplication *);
 
@@ -76,6 +78,8 @@ public:
   void SetImpl (::std::shared_ptr<FudpApplicationImpl>);
 
   void StartApplication () override final;
+
+  void StopApplication() override final;
 
   ::ns3::TypeId GetInstanceTypeId () const override;
 

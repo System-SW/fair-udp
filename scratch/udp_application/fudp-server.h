@@ -69,6 +69,8 @@ public:
 
   void StartApplication () override;
 
+  void StopApplication () override{};
+
 private:
   void SendNACK (::ns3::Address const &);
 
