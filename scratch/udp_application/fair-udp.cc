@@ -28,6 +28,7 @@
 #include <fstream>
 #include <algorithm>
 #include <string>
+#include <limits>
 
 using namespace ns3;
 
@@ -56,9 +57,13 @@ ValidateSequence(sequence_t my_sequence, FairUdpHeader header)
           return OK;
         }
     }
-  else
+  else if (header.GetSequence() < my_sequence)
     {
       return OO_NACK;
+    }
+  else
+    {
+      return OE_NACK;
     }
 }
 
@@ -122,7 +127,7 @@ FairUdpApp::ReceiveHandler(Ptr<Socket> socket)
       if (header.IsOn<FairUdpHeader::Bit::NACK>()) // client side
         {
           // reset my sequence number to the requested number
-          if ((seq_number_ + header.GetSequence()) % 2 != 0 && seq_number_ < header.GetSequence())
+          if ((seq_number_ + header.GetSequence()) % 2 != 0)
             {
               seq_number_ = header.GetSequence();
               congestion_info_.PacketDropDetected(seq_number_);
@@ -146,10 +151,17 @@ FairUdpApp::ReceiveHandler(Ptr<Socket> socket)
               connections_[from].sequence_number += 2;
               break;
             case OE_NACK:
-              connections_[from].sequence_number++;
+              {
+                connections_[from].sequence_number++;
+                SendNACK(from);
+                break;
+              }
             case OO_NACK:
-              SendNACK(from);
-              break;
+              {
+                connections_[from].sequence_number = header.GetSequence() + 2;
+                SendNACK(from);
+                break;
+              }
             }
 
           if (connections_[from].sequence_number < 2) // every sequence overflow send reset
@@ -186,7 +198,6 @@ void
 FairUdpApp::SendNACK(Address dest)
 {
   auto packet = Create<Packet>();
-
   FairUdpHeader header;
   header.SetSequence(connections_[dest].sequence_number);
   header |= FairUdpHeader::Bit::NACK;

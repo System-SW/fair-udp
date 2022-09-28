@@ -20,6 +20,7 @@
 #include "ns3/core-module.h"
 #include "config.h"
 #include <numeric>
+#include <algorithm>
 
 using namespace ns3;
 
@@ -38,12 +39,7 @@ CongestionInfo::CongestionInfo()
 void
 CongestionInfo::PacketDropDetected(sequence_t nack_seq)
 {
-  threshhold_ = bandwidth_ / 2;
-  if (threshhold_ == 0)
-    {
-      threshhold_ = 1;
-    }
-  bandwidth_ = threshhold_;
+  ReduceBandwidth();
 }
 
 uint64_t
@@ -64,17 +60,12 @@ CongestionInfo::GetTransferInterval()
       bandwidth_ = 100;
     }
 
-  auto interval = msg_size_ / prev_bandwidth;
-  if (interval == 0)
-    {
-      interval = 1;
-    }
-  return interval;
+  return std::max(msg_size_ / prev_bandwidth, 1LU);
 }
 
 void
 CongestionInfo::ReduceBandwidth()
 {
-  threshhold_ = bandwidth_ / 2;
-  bandwidth_ = threshhold_ ? threshhold_ : 1;
+  threshhold_ = std::max(bandwidth_ / 2, 1LU);
+  bandwidth_ = threshhold_;
 }
