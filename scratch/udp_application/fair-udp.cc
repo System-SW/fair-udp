@@ -34,24 +34,31 @@ using namespace ns3;
 NS_LOG_COMPONENT_DEFINE("FairUdpApp");
 NS_OBJECT_ENSURE_REGISTERED(FairUdpApp);
 
-static bool
+enum NackStatus
+{
+  OE_NACK,
+  OK,
+  OO_NACK
+};
+
+static NackStatus
 ValidateSequence(sequence_t my_sequence, FairUdpHeader header)
 {
   if ((my_sequence + header.GetSequence()) % 2 == 0)
     {
       if (my_sequence != header.GetSequence())
         {
-          return false;
+          return OE_NACK;
         }
       else
         {
           // correct packet
-          return true;
+          return OK;
         }
     }
   else
     {
-      return false;
+      return OO_NACK;
     }
 }
 
@@ -133,15 +140,18 @@ FairUdpApp::ReceiveHandler(Ptr<Socket> socket)
               NS_LOG_DEBUG("Connected");
             }
 
-          if (ValidateSequence(connections_[from].sequence_number, header))
+          switch (ValidateSequence(connections_[from].sequence_number, header))
             {
+            case OK:
               connections_[from].sequence_number += 2;
-            }
-          else
-            {
+              break;
+            case OE_NACK:
               connections_[from].sequence_number++;
+            case OO_NACK:
               SendNACK(from);
+              break;
             }
+
           if (connections_[from].sequence_number < 2) // every sequence overflow send reset
             {
               SendReset(from);
