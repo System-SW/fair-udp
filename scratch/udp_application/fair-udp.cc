@@ -50,7 +50,8 @@ ValidateSequence(sequence_t my_sequence, FairUdpHeader header)
     {
       return OK;
     }
-  else if (header.GetSequence() < my_sequence)
+  else if (my_sequence < my_sequence + 2 &&
+           header.GetSequence() < my_sequence)
     {
       return OO_NACK;
     }
