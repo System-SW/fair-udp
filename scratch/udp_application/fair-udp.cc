@@ -148,11 +148,7 @@ FairUdpApp::ReceiveHandler(Ptr<Socket> socket)
                 break;
               }
             case OO_NACK:
-              {
-                connections_[from].sequence_number = header.GetSequence() + 2;
-                SendNACK(from);
-                break;
-              }
+              break;
             }
 
           if (connections_[from].sequence_number < 2) // every sequence overflow send reset
