@@ -45,26 +45,16 @@ enum NackStatus
 static NackStatus
 ValidateSequence(sequence_t my_sequence, FairUdpHeader header)
 {
-  if ((my_sequence + header.GetSequence()) % 2 == 0)
+  if ((my_sequence + header.GetSequence()) % 2 == 0 &&
+      my_sequence == header.GetSequence())
     {
-      if (my_sequence != header.GetSequence())
-        {
-          return OE_NACK;
-        }
-      else
-        {
-          // correct packet
-          return OK;
-        }
+      return OK;
     }
   else if (header.GetSequence() < my_sequence)
     {
       return OO_NACK;
     }
-  else
-    {
-      return OE_NACK;
-    }
+  return OE_NACK;
 }
 
 TypeId
