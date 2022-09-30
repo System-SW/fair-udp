@@ -59,9 +59,21 @@ struct FudpClientHealthProbeState<true>
   bool healthy = false;
 };
 
+template <bool>
+struct FudpNackSequenceState
+{
+};
+
+template <>
+struct FudpNackSequenceState<true>
+{
+  nack_seq_t nack_seq{0};
+};
+
 template <FudpFeature FEATURES>
 struct FudpClientState : public FudpClientSequenceState<ContainsZigzag (FEATURES)>,
-                         public FudpClientHealthProbeState<ContainsHealthProbe (FEATURES)>
+                         public FudpClientHealthProbeState<ContainsHealthProbe (FEATURES)>,
+                         public FudpNackSequenceState<ContainsNackSequence (FEATURES)>
 {
   ::ns3::CongestionInfo congestionInfo;
   bool terminated = false;
@@ -184,6 +196,11 @@ void FudpClient<FEATURES>::SendTraffic ()
   auto header = FudpHeader{};
   header.SetSequence (GetState ().sequence++);
 
+  if constexpr (ContainsNackSequence (FEATURES))
+    {
+      header.SetNackSequence (GetState ().nack_seq);
+    }
+
   auto packet = ::ns3::Create<::ns3::Packet> (dummyData.data (), dummyData.size ());
   packet->AddHeader (header);
 
@@ -193,20 +210,38 @@ void FudpClient<FEATURES>::SendTraffic ()
   ScheduleTraffic ();
 }
 
-template <FudpFeature FEATURES, ::std::enable_if_t<!ContainsZigzag (FEATURES), int> = 0>
+template <FudpFeature FEATURES, ::std::enable_if_t<!ContainsZigzag (FEATURES) &&
+                                                   !ContainsNackSequence (FEATURES), int> = 0>
 void HandleNACK (FudpClientState<FEATURES> &state, FudpHeader const &header)
 {
   state.sequence = header.GetSequence ();
   state.congestionInfo.PacketDropDetected (state.sequence.Get ());
 }
 
-template <FudpFeature FEATURES, ::std::enable_if_t<ContainsZigzag (FEATURES), int> = 0>
+template <FudpFeature FEATURES, ::std::enable_if_t<ContainsZigzag (FEATURES) &&
+                                                   !ContainsNackSequence (FEATURES), int> = 0>
 void HandleNACK (FudpClientState<FEATURES> &state, FudpHeader const &header)
 {
   if (((state.sequence.Get () ^ header.GetSequence ()) & 1) != 0)
     {
       state.sequence = header.GetSequence ();
       state.congestionInfo.PacketDropDetected (state.sequence.Get ());
+    }
+}
+
+template <FudpFeature FEATURES, ::std::enable_if_t<!ContainsZigzag (FEATURES) &&
+                                                   ContainsNackSequence (FEATURES), int> = 0>
+void HandleNACK (FudpClientState<FEATURES> &state, FudpHeader const &header)
+{
+  if (state.nack_seq == header.GetNackSequence ())
+    {
+      return;
+    }
+  else if (state.nack_seq < header.GetNackSequence ())
+    {
+      state.sequence = header.GetSequence ();
+      state.nack_seq = header.GetNackSequence ();
+      state.congestionInfo.ReduceBandwidth ();
     }
 }
 

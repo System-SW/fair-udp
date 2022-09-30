@@ -37,8 +37,26 @@
 #include "ns3/ptr.h"
 #include "optref.h"
 
+template <FudpFeature FEATURES, bool = ContainsNackSequence (FEATURES)>
+struct NackStates;
+
 template <FudpFeature FEATURES>
-struct FudpConnection : public FudpClientSequenceState<ContainsZigzag (FEATURES)>
+struct NackStates<FEATURES, true>
+{
+  enum class Status
+    {
+      OK,
+      NEW_NACK,
+      SAME_NACK,
+    };
+};
+
+template <FudpFeature FEATURES>
+using Status = typename NackStates<FEATURES>::Status;
+
+template <FudpFeature FEATURES>
+struct FudpConnection : public FudpClientSequenceState<ContainsZigzag (FEATURES)>,
+                        public FudpNackSequenceState<ContainsNackSequence (FEATURES)>
 {
 };
 
@@ -125,6 +143,11 @@ void FudpServer<FEATURES>::SendNACK (::ns3::Address const &dest)
   header.On<FudpHeader::Bit::NACK> ();
   header.SetSequence (connection.sequence);
 
+  if constexpr (ContainsNackSequence (FEATURES))
+    {
+      header.SetNackSequence (connection.nack_seq);
+    }
+
   auto packet = ::ns3::Create<::ns3::Packet> ();
   packet->AddHeader (header);
 
@@ -135,11 +158,8 @@ void FudpServer<FEATURES>::SendNACK (::ns3::Address const &dest)
 template <FudpFeature FEATURES>
 void FudpServer<FEATURES>::SendHealthProbe (::ns3::Address const &dest)
 {
-  auto &connection = static_cast<FudpConnection<FEATURES> &> (*GetConnection (dest));
-
   auto header = FudpHeader{};
   header.On<FudpHeader::Bit::RESET> ();
-  header.SetSequence (connection.sequence);
 
   auto packet = ::ns3::Create<::ns3::Packet> ();
   packet->AddHeader (header);
@@ -148,17 +168,44 @@ void FudpServer<FEATURES>::SendHealthProbe (::ns3::Address const &dest)
   _socket->SendTo (packet, 0, ::ns3::InetSocketAddress::ConvertFrom (dest));
 }
 
-template <FudpFeature FEATURES, ::std::enable_if_t<!ContainsZigzag (FEATURES), int> = 0>
+template <FudpFeature FEATURES, ::std::enable_if_t<!ContainsZigzag (FEATURES) &&
+                                                   !ContainsNackSequence (FEATURES), int> = 0>
 bool ValidateHeader (FudpConnection<FEATURES> const &connection, FudpHeader const &header)
 {
   return connection.sequence.Get () == header.GetSequence ();
 }
 
-template <FudpFeature FEATURES, ::std::enable_if_t<ContainsZigzag (FEATURES), int> = 0>
+template <FudpFeature FEATURES, ::std::enable_if_t<ContainsZigzag (FEATURES) &&
+                                                   !ContainsNackSequence (FEATURES), int> = 0>
 bool ValidateHeader (FudpConnection<FEATURES> const &connection, FudpHeader const &header)
 {
   return (((connection.sequence.Get () ^ header.GetSequence ()) & 1) != 0) ||
          (connection.sequence.Get () == header.GetSequence ());
+}
+
+template <FudpFeature FEATURES, ::std::enable_if_t<!ContainsZigzag (FEATURES) &&
+                                                   ContainsNackSequence (FEATURES), int> = 0>
+Status<FEATURES> ValidateHeader (const FudpConnection<FEATURES> &connection, const FudpHeader &header)
+{
+  if (connection.nack_seq == header.GetNackSequence ())
+    {
+      if (connection.sequence.Get () == header.GetSequence ())
+        {
+          return Status<FEATURES>::OK;
+        }
+      else
+        {
+          return Status<FEATURES>::NEW_NACK;
+        }
+    }
+  else if (header.GetNackSequence () < connection.nack_seq)
+    {
+      return Status<FEATURES>::NEW_NACK;
+    }
+  else
+    {
+      return Status<FEATURES>::SAME_NACK;
+    }
 }
 
 template <FudpFeature FEATURES>
@@ -178,18 +225,37 @@ void FudpServer<FEATURES>::OnRecv (::ns3::Ptr<::ns3::Socket> socket)
       auto header = FudpHeader{};
       packet->RemoveHeader (header);
 
-      if (!ValidateHeader (connection, header))
+      if constexpr (ContainsNackSequence (FEATURES))
         {
-          if constexpr (ContainsZigzag (FEATURES))
+          switch (ValidateHeader(connection, header))
             {
-              connection.sequence = connection.sequence.Get () + 1;
+            case Status<FEATURES>::OK:
+              connection.sequence++;
+              break;
+            case Status<FEATURES>::NEW_NACK:
+              connection.nack_seq++;
+            case Status<FEATURES>::SAME_NACK:
+              SendNACK (address);
+              break;
+            default:
+              break;
             }
-
-          SendNACK (address);
         }
       else
         {
-          ++connection.sequence;
+          if (!ValidateHeader (connection, header))
+            {
+              if constexpr (ContainsZigzag (FEATURES))
+                {
+                  connection.sequence = connection.sequence.Get () + 1;
+                }
+
+              SendNACK (address);
+            }
+          else
+            {
+              ++connection.sequence;
+            }
         }
 
       if constexpr (ContainsHealthProbe (FEATURES))

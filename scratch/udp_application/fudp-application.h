@@ -31,6 +31,7 @@
 using FudpFeature = u32;
 constexpr FudpFeature FUDP_FEATURE_ZIGZAG = 1;
 constexpr FudpFeature FUDP_FEATURE_HEALTH_PROBE = 2;
+constexpr FudpFeature FUDP_FEATURE_NACK_SEQUENCE = 1u << 3;
 
 constexpr bool ContainsZigzag (FudpFeature features)
 {
@@ -40,6 +41,11 @@ constexpr bool ContainsZigzag (FudpFeature features)
 constexpr bool ContainsHealthProbe (FudpFeature features)
 {
   return (features & FUDP_FEATURE_HEALTH_PROBE) != 0;
+}
+
+constexpr bool ContainsNackSequence (FudpFeature features)
+{
+  return (features & FUDP_FEATURE_NACK_SEQUENCE) != 0;
 }
 
 class FudpApplication;
