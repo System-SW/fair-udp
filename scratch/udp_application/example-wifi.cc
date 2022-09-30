@@ -284,10 +284,10 @@ int main (int argc, char *argv[])
   CallPhaseSetupFunc (SetupPhase2);
   CallPhaseSetupFunc (SetupPhase3);
   CallPhaseSetupFunc (GenerateFudpPhaseSetupFunc<0> (serverNode, wifiStaNodes));
-  CallPhaseSetupFunc (GenerateFudpPhaseSetupFunc<FUDP_FEATURE_ZIGZAG> (serverNode, wifiStaNodes));
+  CallPhaseSetupFunc (GenerateFudpPhaseSetupFunc<FUDP_FEATURE_NACK_SEQUENCE> (serverNode, wifiStaNodes));
   CallPhaseSetupFunc (GenerateFudpPhaseSetupFunc<FUDP_FEATURE_HEALTH_PROBE> (serverNode, wifiStaNodes));
   CallPhaseSetupFunc (
-      GenerateFudpPhaseSetupFunc<FUDP_FEATURE_ZIGZAG | FUDP_FEATURE_HEALTH_PROBE> (serverNode, wifiStaNodes));
+      GenerateFudpPhaseSetupFunc<FUDP_FEATURE_NACK_SEQUENCE | FUDP_FEATURE_HEALTH_PROBE> (serverNode, wifiStaNodes));
 
   // generate trace file
   phy.SetPcapDataLinkType (WifiPhyHelper::DLT_IEEE802_11_RADIO);
