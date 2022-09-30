@@ -33,9 +33,12 @@
  * | 1 bit | 1 bit | 22bit (preserved) |  8 bit (unsigned) |
  * |-------+-------+-------------------+-------------------|
  * | NACK  | RESET |                   | Sequence Number   |
+ * |-------------------------------------------------------|
+ * | NACK Sequence (32 bit)                                |
  */
 
 using sequence_t = u8;
+using nack_seq_t = u32;
 
 struct FudpSeqNumberingMehtod_
 {
@@ -164,19 +167,21 @@ public:
 
   u32 GetSerializedSize () const override
   {
-    return 2 * sizeof (u32);
+    return 3 * sizeof (u32);
   }
 
   void Serialize (::ns3::Buffer::Iterator buf) const override
   {
     buf.WriteU32 (PROTOCOL_ID);
     buf.WriteHtonU32 (_bits);
+    buf.WriteHtonU32 (_nack_seq);
   }
 
   u32 Deserialize (::ns3::Buffer::Iterator buf) override
   {
     NS_ASSERT (PROTOCOL_ID == buf.ReadU32 ());
     _bits = buf.ReadNtohU32 ();
+    _nack_seq = buf.ReadNtohU32 ();
     return GetSerializedSize ();
   }
 
@@ -207,6 +212,16 @@ public:
     SetSequence (*fudp_seq);
   }
 
+  nack_seq_t GetNackSequence () const
+  {
+    return _nack_seq;
+  }
+
+  void SetNackSequence (nack_seq_t nack_seq)
+  {
+    _nack_seq = nack_seq;
+  }
+
   ::ns3::TypeId GetInstanceTypeId () const override
   {
     return GetTypeId ();
@@ -219,7 +234,8 @@ public:
   }
 
 private:
-  u32 _bits;
+  u32 _bits{0};
+  nack_seq_t _nack_seq{0};
 };
 
 #endif /* FUDP_HEADER_H */
