@@ -60,9 +60,9 @@
 #include "fudp-client.h"
 #include "fudp-server.h"
 
-#define PHASE_INTERVAL 30
-#define PHASE_INTERVAL_S "30"
-#define PHASE_INTERVAL_HALF_S "15"
+#define PHASE_INTERVAL 40
+#define PHASE_INTERVAL_S "40"
+#define PHASE_INTERVAL_HALF_S "10"
 
 using namespace ns3;
 
@@ -219,7 +219,7 @@ int main (int argc, char *argv[])
     u32 const max_packet_size = 1024;
     auto udpClientHelper = UdpClientHelper{serverIpv4, serverPort};
     udpClientHelper.SetAttribute ("MaxPackets", UintegerValue (UINT32_MAX));
-    udpClientHelper.SetAttribute ("Interval", TimeValue (MilliSeconds (2)));
+    udpClientHelper.SetAttribute ("Interval", TimeValue (MilliSeconds (1)));
     udpClientHelper.SetAttribute ("PacketSize", UintegerValue (max_packet_size));
 
     auto udpClientApps = udpClientHelper.Install (wifiStaNodes);
@@ -283,11 +283,11 @@ int main (int argc, char *argv[])
   CallPhaseSetupFunc (SetupPhase1);
   CallPhaseSetupFunc (SetupPhase2);
   CallPhaseSetupFunc (SetupPhase3);
-  CallPhaseSetupFunc (GenerateFudpPhaseSetupFunc<0> (serverNode, wifiStaNodes));
-  CallPhaseSetupFunc (GenerateFudpPhaseSetupFunc<FUDP_FEATURE_NACK_SEQUENCE> (serverNode, wifiStaNodes));
-  CallPhaseSetupFunc (GenerateFudpPhaseSetupFunc<FUDP_FEATURE_HEALTH_PROBE> (serverNode, wifiStaNodes));
-  CallPhaseSetupFunc (
-      GenerateFudpPhaseSetupFunc<FUDP_FEATURE_NACK_SEQUENCE | FUDP_FEATURE_HEALTH_PROBE> (serverNode, wifiStaNodes));
+  // CallPhaseSetupFunc (GenerateFudpPhaseSetupFunc<0> (serverNode, wifiStaNodes));
+  // CallPhaseSetupFunc (GenerateFudpPhaseSetupFunc<FUDP_FEATURE_NACK_SEQUENCE> (serverNode, wifiStaNodes));
+  // CallPhaseSetupFunc (GenerateFudpPhaseSetupFunc<FUDP_FEATURE_HEALTH_PROBE> (serverNode, wifiStaNodes));
+  // CallPhaseSetupFunc (
+  //     GenerateFudpPhaseSetupFunc<FUDP_FEATURE_NACK_SEQUENCE | FUDP_FEATURE_HEALTH_PROBE> (serverNode, wifiStaNodes));
 
   // generate trace file
   phy.SetPcapDataLinkType (WifiPhyHelper::DLT_IEEE802_11_RADIO);

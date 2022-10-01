@@ -60,9 +60,9 @@ CongestionInfo::GetTransferInterval()
       bandwidth_++;
     }
 
-  if (bandwidth_ < 30)
+  if (bandwidth_ < 100)
     {
-      bandwidth_ = 30;
+      bandwidth_ = 100;
     }
 
   auto interval = msg_size_ / prev_bandwidth;
