@@ -119,7 +119,7 @@ int main (int argc, char *argv[])
 {
   using namespace std::string_literals;
 
-  auto SIMUL_TIME = PHASE_INTERVAL * 7;
+  auto SIMUL_TIME = PHASE_INTERVAL + (PHASE_INTERVAL + 10) * 3;
   auto PROTOCOL = "udp"s;
   auto SERVER_BANDWIDTH = "1000Mbps"s;
   auto NUM_UAVS = UAV_NUM;
@@ -208,8 +208,16 @@ int main (int argc, char *argv[])
   auto phaseIndex = 0_u16;
   auto const CallPhaseSetupFunc = [&phaseIndex, &serverIpv4] (auto const &setupFunc) {
     u16 const serverPort = serverPortOffset + phaseIndex;
-    setupFunc (::ns3::InetSocketAddress{serverIpv4, serverPort}, PHASE_INTERVAL * phaseIndex,
-               PHASE_INTERVAL * (phaseIndex + 1));
+    if (phaseIndex > 0)
+      {
+        setupFunc (::ns3::InetSocketAddress{serverIpv4, serverPort}, PHASE_INTERVAL * phaseIndex + 10,
+                   PHASE_INTERVAL * (phaseIndex + 1));
+      }
+    else
+      {
+        setupFunc (::ns3::InetSocketAddress{serverIpv4, serverPort}, PHASE_INTERVAL * phaseIndex,
+                   PHASE_INTERVAL * (phaseIndex + 1));
+      }
     ++phaseIndex;
   };
 
@@ -280,14 +288,14 @@ int main (int argc, char *argv[])
   };
 
   auto serverNode = p2pNodes.Get (SpecialNodes::P2P_SERVER);
-  CallPhaseSetupFunc (SetupPhase1);
-  CallPhaseSetupFunc (SetupPhase2);
-  CallPhaseSetupFunc (SetupPhase3);
-  // CallPhaseSetupFunc (GenerateFudpPhaseSetupFunc<0> (serverNode, wifiStaNodes));
-  // CallPhaseSetupFunc (GenerateFudpPhaseSetupFunc<FUDP_FEATURE_NACK_SEQUENCE> (serverNode, wifiStaNodes));
-  // CallPhaseSetupFunc (GenerateFudpPhaseSetupFunc<FUDP_FEATURE_HEALTH_PROBE> (serverNode, wifiStaNodes));
-  // CallPhaseSetupFunc (
-  //     GenerateFudpPhaseSetupFunc<FUDP_FEATURE_NACK_SEQUENCE | FUDP_FEATURE_HEALTH_PROBE> (serverNode, wifiStaNodes));
+  // CallPhaseSetupFunc (SetupPhase1);
+  // CallPhaseSetupFunc (SetupPhase2);
+  // CallPhaseSetupFunc (SetupPhase3);
+  CallPhaseSetupFunc (GenerateFudpPhaseSetupFunc<0> (serverNode, wifiStaNodes));
+  CallPhaseSetupFunc (GenerateFudpPhaseSetupFunc<FUDP_FEATURE_NACK_SEQUENCE> (serverNode, wifiStaNodes));
+  CallPhaseSetupFunc (GenerateFudpPhaseSetupFunc<FUDP_FEATURE_HEALTH_PROBE> (serverNode, wifiStaNodes));
+  CallPhaseSetupFunc (
+      GenerateFudpPhaseSetupFunc<FUDP_FEATURE_NACK_SEQUENCE | FUDP_FEATURE_HEALTH_PROBE> (serverNode, wifiStaNodes));
 
   // generate trace file
   phy.SetPcapDataLinkType (WifiPhyHelper::DLT_IEEE802_11_RADIO);
