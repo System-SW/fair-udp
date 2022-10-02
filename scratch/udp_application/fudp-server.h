@@ -198,14 +198,7 @@ Status<FEATURES> ValidateHeader (const FudpConnection<FEATURES> &connection, con
           return Status<FEATURES>::NEW_NACK;
         }
     }
-  else if (header.GetNackSequence () < connection.nack_seq)
-    {
-      return Status<FEATURES>::NEW_NACK;
-    }
-  else
-    {
-      return Status<FEATURES>::SAME_NACK;
-    }
+  return Status<FEATURES>::SAME_NACK;
 }
 
 template <FudpFeature FEATURES>
@@ -233,7 +226,10 @@ void FudpServer<FEATURES>::OnRecv (::ns3::Ptr<::ns3::Socket> socket)
               connection.sequence++;
               break;
             case Status<FEATURES>::NEW_NACK:
-              connection.nack_seq++;
+              {
+                connection.sequence = header.GetSequence () + 1;
+                connection.nack_seq++;
+              }
             case Status<FEATURES>::SAME_NACK:
               SendNACK (address);
               break;
