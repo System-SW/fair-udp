@@ -19,6 +19,7 @@
 #ifndef FUDP_SERVER_H
 #define FUDP_SERVER_H
 
+#include <iostream>
 #include "ns3/abort.h"
 #include "ns3/address.h"
 #include "ns3/fatal-error.h"
@@ -193,12 +194,8 @@ Status<FEATURES> ValidateHeader (const FudpConnection<FEATURES> &connection, con
         {
           return Status<FEATURES>::OK;
         }
-      else
-        {
-          return Status<FEATURES>::NEW_NACK;
-        }
     }
-  return Status<FEATURES>::SAME_NACK;
+  return Status<FEATURES>::NEW_NACK;
 }
 
 template <FudpFeature FEATURES>
@@ -226,12 +223,12 @@ void FudpServer<FEATURES>::OnRecv (::ns3::Ptr<::ns3::Socket> socket)
               connection.sequence++;
               break;
             case Status<FEATURES>::NEW_NACK:
+                connection.nack_seq++;
+            case Status<FEATURES>::SAME_NACK:
               {
                 connection.sequence = header.GetSequence () + 1;
-                connection.nack_seq++;
+                SendNACK (address);
               }
-            case Status<FEATURES>::SAME_NACK:
-              SendNACK (address);
               break;
             default:
               break;

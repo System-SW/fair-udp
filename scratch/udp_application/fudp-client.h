@@ -22,6 +22,7 @@
 #include <array>
 #include <cstdlib>
 #include <type_traits>
+#include <iostream>
 
 #include "ns3/address.h"
 #include "ns3/inet-socket-address.h"
@@ -235,12 +236,13 @@ void HandleNACK (FudpClientState<FEATURES> &state, FudpHeader const &header)
 {
   if (state.nack_seq < header.GetNackSequence ())
     {
+      std::cout << "handle nack " << state.nack_seq << std::endl;
+      for (uint i = 0; i < header.GetNackSequence() - state.nack_seq; i++)
+        {
+          state.congestionInfo.ReduceBandwidth ();
+        }
       state.nack_seq = header.GetNackSequence ();
-      state.congestionInfo.ReduceBandwidth ();
-    }
-  else
-    {
-      state.congestionInfo.ReduceBandwidth ();
+      state.sequence = header.GetSequence ();
     }
 }
 
@@ -262,6 +264,11 @@ void FudpClient<FEATURES>::OnRecv (::ns3::Ptr<::ns3::Socket> socket)
       if (header.Has<FudpHeader::Bit::NACK> ())
         {
           HandleNACK (GetState (), header);
+          if constexpr (ContainsHealthProbe (FEATURES))
+            {
+              _state.healthy = true;
+            }
+
           return;
         }
 
