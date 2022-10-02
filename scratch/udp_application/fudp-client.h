@@ -234,15 +234,17 @@ template <FudpFeature FEATURES, ::std::enable_if_t<!ContainsZigzag (FEATURES) &&
                                                    ContainsNackSequence (FEATURES), int> = 0>
 void HandleNACK (FudpClientState<FEATURES> &state, FudpHeader const &header)
 {
-  if (state.nack_seq < header.GetNackSequence ())
+  if (state.nack_seq < header.GetNackSequence ()) // new nack
     {
       std::cout << "handle nack " << state.nack_seq << std::endl;
-      for (uint i = 0; i < header.GetNackSequence() - state.nack_seq; i++)
-        {
-          state.congestionInfo.ReduceBandwidth ();
-        }
       state.nack_seq = header.GetNackSequence ();
       state.sequence = header.GetSequence ();
+      state.congestionInfo.ReduceBandwidth ();
+    }
+  else if (state.nack_seq == header.GetNackSequence ())
+    {
+      std::cout << "handle old nack " << state.nack_seq << std::endl;
+      state.congestionInfo.ReduceBandwidth ();
     }
 }
 

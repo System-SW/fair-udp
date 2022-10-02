@@ -188,11 +188,15 @@ template <FudpFeature FEATURES, ::std::enable_if_t<!ContainsZigzag (FEATURES) &&
                                                    ContainsNackSequence (FEATURES), int> = 0>
 Status<FEATURES> ValidateHeader (const FudpConnection<FEATURES> &connection, const FudpHeader &header)
 {
-  if (connection.nack_seq == header.GetNackSequence ())
+  if (connection.sequence.Get () == header.GetSequence ())
     {
-      if (connection.sequence.Get () == header.GetSequence ())
+      if (connection.nack_seq == header.GetNackSequence ())
         {
           return Status<FEATURES>::OK;
+        }
+      else
+        {
+          return Status<FEATURES>::SAME_NACK;
         }
     }
   return Status<FEATURES>::NEW_NACK;
