@@ -26,6 +26,8 @@
 #include "ns3/socket-factory.h"
 #include "ns3/packet.h"
 #include "ns3/uinteger.h"
+#include "ns3/rng-seed-manager.h"
+#include "ns3/random-variable-stream.h"
 #include "fdp-client.h"
 #include "fair-udp-header.h"
 
@@ -54,9 +56,9 @@ TypeId FdpClient::GetTypeId ()
                    MakeTimeChecker ())
     .AddAttribute ("PacketSize",
                    "The packet size that this client transfer (bytes)",
-                   UintegerValue (512),
+                   UintegerValue (1024),
                    MakeUintegerAccessor (&FdpClient::m_size),
-                   MakeUintegerChecker<uint32_t> (1024))
+                   MakeUintegerChecker<uint32_t> ())
     .AddAttribute ("RemoteAddress",
                    "The destination Address of the FDP Client",
                    AddressValue (),
@@ -148,13 +150,16 @@ FdpClient::StartApplication ()
           NS_ASSERT_MSG (false, "Incompatible address type: " << m_serverAddress);
         }
     }
-
   m_socket->SetRecvCallback (MakeCallback(&FdpClient::HandleRecv, this));
-  m_sendEvent = Simulator::Schedule (Seconds (0.0), &FdpClient::Send, this);
+  // auto rng = CreateObject<UniformRandomVariable>();
+  // m_sendEvent = Simulator::Schedule (MilliSeconds (rng->GetInteger(0, 1000)),
+  //                                    &FdpClient::Send, this);
+  m_sendEvent = Simulator::Schedule (MilliSeconds (0),
+                                     &FdpClient::Send, this);
 }
 
 void
-FdpClient::StopApplication()    
+FdpClient::StopApplication()
 {
   NS_LOG_FUNCTION(this);
   Simulator::Cancel(m_sendEvent);
@@ -168,11 +173,21 @@ FdpClient::Send ()
 
   // prepare for packet header and contents
   FairUdpHeader header;
+  header.SetNackSequence(m_nack_seq);
+  header.SetSequence(m_seq++);
 
   // create packet
   Ptr<Packet> packet = Create<Packet>(m_size + sizeof(uint32_t));
   packet->AddHeader(header);
 
+  if (m_seq == 0)
+    {
+      if (!m_reset_successed)
+        {
+          ReduceBandwidth();
+        }
+      m_reset_successed = false;
+    }
   m_socket->Send(packet);
   m_sendEvent = Simulator::Schedule(GetTransferInterval(), &FdpClient::Send, this);
 }
@@ -182,18 +197,28 @@ void FdpClient::HandleRecv(Ptr<Socket> socket)
   NS_LOG_FUNCTION (this);
   Ptr<Packet> packet;
   Address from;
-  while ((packet = socket->RecvFrom(from)) && packet->GetSize() != 0)
+  while ((packet = socket->RecvFrom(from)))
     {
       FairUdpHeader header;
       packet->RemoveHeader(header);
-      if (m_nack_seq.get() < header.GetNackSequence().get())
+      if (header.IsOn<FairUdpHeader::Bit::NACK>())
         {
-          m_nack_seq = header.GetNackSequence();
-          ReduceBandwidth();
+          NS_LOG_INFO("NACK");
+          m_reset_successed = true;
+          if (m_nack_seq.get() < header.GetNackSequence().get())
+            {
+              m_nack_seq = header.GetNackSequence();
+              ReduceBandwidth();
+            }
+          else if (m_nack_seq.get() == header.GetNackSequence().get())
+            {
+              ReduceBandwidth();
+            }
         }
-      else if (m_nack_seq.get() == header.GetNackSequence().get())
+      else if (header.IsOn<FairUdpHeader::Bit::RESET>())
         {
-          ReduceBandwidth();
+          NS_LOG_INFO("RESET");
+          m_reset_successed = true;
         }
     }
 }
@@ -215,14 +240,7 @@ Time FdpClient::GetTransferInterval()
   m_bandwidth++;
   if (m_bandwidth < min_bandwidth)
     {
-      m_bandwidth = (m_size / m_min_interval.GetSeconds());
-      return m_min_interval;
+      m_bandwidth = min_bandwidth;
     }
-
-  if (m_bandwidth > max_bandwidth)
-    {
-      m_bandwidth = (m_size / m_max_interval.GetSeconds());
-      return m_max_interval;
-    }
-  return Seconds(static_cast<float>(m_size) / m_bandwidth);
+  return Seconds(m_size / std::min(max_bandwidth, static_cast<double>(m_bandwidth)));
 }

@@ -63,6 +63,7 @@ namespace ns3
     uint64_t m_bandwidth{1024};
     nack_seq_t m_nack_seq{0};
     sequence_t m_seq{0};
+    bool m_reset_successed{false};
 
     void ReduceBandwidth();
     Time GetTransferInterval();

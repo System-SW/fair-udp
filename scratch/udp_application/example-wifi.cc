@@ -36,8 +36,6 @@
 #include "ns3/packet-sink-helper.h"
 #include "ns3/packet.h"
 #include "ns3/point-to-point-module.h"
-#include "ns3/random-variable-stream.h"
-#include "ns3/rng-seed-manager.h"
 #include "ns3/string.h"
 #include "ns3/udp-client-server-helper.h"
 #include "ns3/wifi-module.h"
@@ -75,10 +73,11 @@ int main (int argc, char *argv[])
   cmd.Parse (argc, argv);
 
   {
-    constexpr auto ALLOWED_PROTOCOLS = ::std::array{"udp", "fudp"};
+    constexpr auto ALLOWED_PROTOCOLS = ::std::array{"udp", "fdp"};
     if (::std::all_of (ALLOWED_PROTOCOLS.begin (), ALLOWED_PROTOCOLS.end (),
                        [&PROTOCOL] (auto v) { return PROTOCOL != v; }))
       {
+        NS_LOG_ERROR("Unproper protocol name");
         ::std::exit (-1);
       }
   }
@@ -143,21 +142,18 @@ int main (int argc, char *argv[])
   address.Assign (staDevices);
   address.Assign (apDevices);
 
-  SeedManager::SetSeed (1423);
-  auto rng = CreateObject<UniformRandomVariable> ();
-
   auto const serverIpv4 = p2pInterfaces.GetAddress (SpecialNodes::P2P_SERVER);
-  auto const serverPort = 7777;
+  auto const serverPort = 19574;
   auto const serverAddress = InetSocketAddress{serverIpv4, serverPort};
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // Setup UDP clients and server
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  if (PROTOCOL == "fudp")
+  if (PROTOCOL == "fdp")
     {
       LogComponentEnable ("FdpClient", LOG_LEVEL_INFO);
-      LogComponentEnable ("FdpServer", LOG_LEVEL_INFO);
+      // LogComponentEnable ("FdpServer", LOG_LEVEL_INFO);
 
       FdpServerHelper server;
       auto server_app = server.Install(p2pNodes.Get(SpecialNodes::P2P_SERVER));
@@ -165,6 +161,8 @@ int main (int argc, char *argv[])
 
 
       FdpClientHelper client{serverAddress};
+      client.SetAttribute("MinInterval", TimeValue(MilliSeconds(1)));
+      client.SetAttribute("MaxInterval", TimeValue(MilliSeconds(17)));
       auto client_apps = client.Install(wifiStaNodes);
       client_apps.Start(Seconds(1));
     }

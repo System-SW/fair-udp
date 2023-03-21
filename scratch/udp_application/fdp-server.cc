@@ -120,9 +120,10 @@ void FdpServer::StopApplication ()
 void FdpServer::HandleRecv(Ptr<Socket> socket)
 {
   NS_LOG_FUNCTION (this);
+  NS_LOG_INFO("Receive MSG");
   Ptr<Packet> packet;
   Address from;
-  while ((packet = socket->RecvFrom(from)) && packet->GetSize() != 0)
+  while ((packet = socket->RecvFrom(from)))
     {
       FairUdpHeader header;
       packet->RemoveHeader(header);
@@ -155,11 +156,14 @@ FdpClientConnection::DetermineFeedback(FairUdpHeader header) const
 {
   if (m_seq == header.GetSequence())
     {
-      return fdp::FeedbackType::OK;
-    }
-  else
-    {
-      return fdp::FeedbackType::SAME_NACK;
+      if (m_nack_seq.get() == header.GetNackSequence().get())
+        {
+          return fdp::FeedbackType::OK;
+        }
+      else
+        {
+          return fdp::FeedbackType::SAME_NACK;
+        }
     }
   return fdp::FeedbackType::NEW_NACK;
 }
@@ -196,7 +200,7 @@ Ptr<Packet> FdpClientConnection::MakeNack() const
   header |= FairUdpHeader::Bit::NACK;
   header.SetNackSequence(m_nack_seq);
   header.SetSequence(m_seq);
-  Ptr<Packet> nack = Create<Packet>();
+  Ptr<Packet> nack = Create<Packet>(sizeof(FairUdpHeader));
   nack->AddHeader(header);
   return nack;
 }
@@ -205,7 +209,7 @@ Ptr<Packet> FdpClientConnection::MakeReset() const
 {
   FairUdpHeader header;
   header |= FairUdpHeader::Bit::RESET;
-  Ptr<Packet> reset = Create<Packet>();
+  Ptr<Packet> reset = Create<Packet>(sizeof(FairUdpHeader));
   reset->AddHeader(header);
   return reset;
 }

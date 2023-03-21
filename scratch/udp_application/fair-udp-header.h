@@ -40,7 +40,7 @@ namespace ns3
     static constexpr uint32_t SEQ_MASK = (sequence_t(~0u));
     static constexpr uint32_t OPT_MASK = ~SEQ_MASK;
   public:
-    static constexpr size_t HEADER_SIZE = 2 * sizeof(uint32_t);
+    static constexpr size_t HEADER_SIZE = sizeof(uint32_t);
     enum class Bit: uint32_t
       {
         NACK = 0x1u << 31,       // use enclosed sequence number in the next message
