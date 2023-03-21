@@ -16,29 +16,30 @@
  * Author: Chang-Hui Kim <kch9001@gmail.com>
  */
 
+#pragma once
 #ifndef FAIR_UDP_HEADER_H
 #define FAIR_UDP_HEADER_H
 
+#include "sequence_util.h"
 #include "ns3/header.h"
 
 namespace ns3
 {
   /*
-    | Protocol ID   (32 bit)                                |
     |-------------------------------------------------------|
     | 1 bit | 1 bit | 22bit (preserved) |  8 bit (unsigned) |
     |-------+-------+-------------------+-------------------|
-    | NACK  | RESET |                   | Sequence Number   |
-   */
+    | NACK  | RESET | NACK Sequence     | Sequence Number   |
+  */
 
 
   using sequence_t = uint8_t;
+  using nack_seq_t = sequence<22>; // 22 bits uint
   class FairUdpHeader : public Header
   {
     static constexpr uint32_t SEQ_MASK = (sequence_t(~0u));
     static constexpr uint32_t OPT_MASK = ~SEQ_MASK;
   public:
-    static constexpr uint32_t PROTOCOL_ID = 0x12345678;
     static constexpr size_t HEADER_SIZE = 2 * sizeof(uint32_t);
     enum class Bit: uint32_t
       {
@@ -46,15 +47,50 @@ namespace ns3
         RESET = 0x1u << 30,      // request reset sequence number to 0
       };
 
-    static TypeId GetTypeId();
-    TypeId GetInstanceTypeId() const override;
-    uint32_t GetSerializedSize() const override;
-    void Serialize(Buffer::Iterator start) const override;
-    uint32_t Deserialize(Buffer::Iterator start) override;
-    void Print(std::ostream& os) const override;
+    static TypeId GetTypeId()
+    {
+      static TypeId tid = TypeId("ns3::FairUdpHeader")
+        .SetParent<Header>()
+        .AddConstructor<FairUdpHeader>()
+        ;
+      return tid;
+    }
+
+    TypeId GetInstanceTypeId() const override
+    {
+      return GetTypeId();
+    }
+
+    uint32_t GetSerializedSize() const override
+    {
+      return HEADER_SIZE; // the number of bytes consumed
+    }
+
+    void Serialize(Buffer::Iterator start) const override
+    {
+      // write protocol bit field
+      start.WriteHtonU32(bit_field_);
+    }
+    
+    uint32_t Deserialize(Buffer::Iterator start) override
+    {
+      bit_field_ = start.ReadNtohU32();          // read bit_field
+      return HEADER_SIZE; // the number of bytes consumed
+    }
+
+    void Print(std::ostream& os) const override
+    {
+      os << " Sequence Number: " << GetSequence()
+         << " NACK=" << IsOn<Bit::NACK>()
+         << " Reset=" << IsOn<Bit::RESET>();
+    }
 
     // method for set bit_field_
-    FairUdpHeader& operator |= (Bit bit);
+    FairUdpHeader& operator |= (Bit bit)
+    {
+      bit_field_ |= static_cast<uint32_t>(bit);
+      return *this;
+    }
 
     template <Bit bit>
     bool IsOn() const
@@ -62,8 +98,29 @@ namespace ns3
       return (bit_field_ & static_cast<uint32_t>(bit)) != 0;
     }
 
-    void SetSequence(sequence_t seq);
-    sequence_t GetSequence() const;
+    void SetSequence(sequence_t seq)
+    {
+      bit_field_ &= OPT_MASK;     // clean up seq number
+      bit_field_ |= seq;          // set seq number
+    }
+
+    sequence_t GetSequence() const
+    {
+      return static_cast<sequence_t>(bit_field_ & SEQ_MASK);
+    }
+
+    void SetNackSequence(nack_seq_t nack_seq)
+    {
+      NS_ASSERT(nack_seq.get() <= ((0x1u << 22) - 1));
+      bit_field_ &= ~(((0x1u << 22) - 1) << 8);
+      bit_field_ |= static_cast<uint32_t>(nack_seq.get()) << 8;
+    }
+
+    nack_seq_t GetNackSequence() const
+    {
+      uint32_t nack_seq = bit_field_ & ~(0x3u << 30);
+      return nack_seq_t{nack_seq};
+    }
 
   private:
     uint32_t bit_field_{0};
