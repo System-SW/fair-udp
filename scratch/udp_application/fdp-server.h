@@ -21,18 +21,57 @@
 #ifndef FDP_SERVER_H
 #define FDP_SERVER_H
 
-#include <map>
+#include <unordered_map>
 #include "ns3/application.h"
 #include "ns3/event-id.h"
 #include "ns3/ptr.h"
 #include "ns3/address.h"
+#include "ns3/inet-socket-address.h"
 #include "sequence_util.h"
 #include "fair-udp-header.h"
 
 namespace ns3
 {
   class Socket;
-  class FdpClientConnection;
+  class FdpServer;
+
+  namespace fdp
+  {
+    enum class FeedbackType
+      {
+        OK,
+        SAME_NACK,
+        NEW_NACK,
+      };
+  }
+
+  class FdpClientConnection
+  {
+  private:
+    // Address m_address; // only for InetSocketaddress or Inet6SocketAddress
+    sequence_t m_seq{0};
+    nack_seq_t m_nack_seq{0};
+  public:
+    FdpClientConnection(Address address);
+    fdp::FeedbackType DetermineFeedback(FairUdpHeader header) const;
+
+    // send nack or reset... ect
+    Ptr<Packet> GenerateFeedback(fdp::FeedbackType ft, FairUdpHeader header);
+  private:
+    /* for client feedback */
+    Ptr<Packet> MakeNack() const;
+    Ptr<Packet> MakeReset() const;
+  };
+
+  struct AddressHash
+  {
+    size_t operator() (const Address &x) const
+    {
+      NS_ABORT_IF(!InetSocketAddress::IsMatchingType(x));
+      auto a = InetSocketAddress::ConvertFrom(x);
+      return std::hash<uint32_t>()(a.GetIpv4().Get());
+    }
+  };
 
   class FdpServer : public Application
   {
@@ -40,13 +79,6 @@ namespace ns3
     static TypeId GetTypeId ();
     FdpServer ();
     ~FdpServer () override;
-
-    enum class FeedbackType
-      {
-        OK,
-        SAME_NACK,
-        NEW_NACK,
-      };
 
   protected:
     void DoDispose () override;
@@ -62,29 +94,11 @@ namespace ns3
     Ptr<Socket> m_socket{0};
     Ptr<Socket> m_socket6{0};
 
-    std::map<Address, FdpClientConnection> m_connections;
+    std::unordered_map<Address, FdpClientConnection, AddressHash> m_connections;
 
     FdpClientConnection& GetConnection(Address address);
 
     // XXX: Needs to add some Per Client Statistics
-  };
-
-  class FdpClientConnection
-  {
-  private:
-    const Address m_address; // only for InetSocketaddress or Inet6SocketAddress
-    sequence_t m_seq{0};
-    nack_seq_t m_nack_seq{0};
-  public:
-    FdpClientConnection(Address address);
-    FdpServer::FeedbackType DetermineFeedback(FairUdpHeader header) const;
-
-    // send nack or reset... ect
-    Ptr<Packet> GenerateFeedback(FdpServer::FeedbackType ft, FairUdpHeader header);
-  private:
-    /* for client feedback */
-    Ptr<Packet> MakeNack() const;
-    Ptr<Packet> MakeReset() const;
   };
 }
 

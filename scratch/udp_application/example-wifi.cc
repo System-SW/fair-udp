@@ -17,8 +17,7 @@
  */
 
 #include "config.h"
-#include "fair-udp-helper.h"
-#include "fair-udp.h"
+#include "fdp-client-server-helper.h"
 #include "ns3/application-container.h"
 #include "ns3/applications-module.h"
 #include "ns3/command-line.h"
@@ -58,23 +57,6 @@ enum SpecialNodes {
   P2P_SERVER = 1,
 };
 
-class DummyStream : public PacketSource
-{
-public:
-  DummyStream (std::string msg) : msg_{msg}
-  {
-  }
-
-  Ptr<Packet> GetPacket () override;
-
-private:
-  std::string msg_;
-};
-
-Ptr<Packet> DummyStream::GetPacket ()
-{
-  return Create<Packet> (reinterpret_cast<uint8_t *> (msg_.data ()), msg_.size ());
-}
 
 int main (int argc, char *argv[])
 {
@@ -84,14 +66,12 @@ int main (int argc, char *argv[])
   auto PROTOCOL = "udp"s;
   auto SERVER_BANDWIDTH = "1000Mbps"s;
   auto NUM_UAVS = UAV_NUM;
-  auto EXCLUSIVE_SENDER = false;
 
   auto cmd = CommandLine{__FILE__};
   cmd.AddValue ("protocol", "", PROTOCOL);
   cmd.AddValue ("server-bandwidth", "", SERVER_BANDWIDTH);
   cmd.AddValue ("uavs", "", NUM_UAVS);
   cmd.AddValue ("simul_time", "", SIMUL_TIME);
-  cmd.AddValue ("exclusive_sender", "", EXCLUSIVE_SENDER);
   cmd.Parse (argc, argv);
 
   {
@@ -113,7 +93,7 @@ int main (int argc, char *argv[])
   auto p2pDevices = p2pHelper.Install (p2pNodes);
 
   // wifi part
-  auto wifiStaNodes = NodeContainer{NUM_UAVS * (EXCLUSIVE_SENDER ? 2 : 1)};
+  auto wifiStaNodes = NodeContainer{NUM_UAVS};
   auto wifiApNode = p2pNodes.Get (SpecialNodes::WIFI_AP);
 
   auto channel = YansWifiChannelHelper::Default ();
@@ -170,58 +150,38 @@ int main (int argc, char *argv[])
   auto const serverPort = 7777;
   auto const serverAddress = InetSocketAddress{serverIpv4, serverPort};
 
-  auto clientApps = ApplicationContainer{};
-
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // Setup UDP clients and server
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  auto dummyData = DummyStream{::std::string (1024, '\0')};
   if (PROTOCOL == "fudp")
     {
-      p2pNodes.Get (SpecialNodes::P2P_SERVER)->AddApplication (CreateObject<FairUdpApp> ());
-      LogComponentEnable ("FairUdpApp", LOG_LEVEL_INFO);
+      LogComponentEnable ("FdpClient", LOG_LEVEL_INFO);
+      LogComponentEnable ("FdpServer", LOG_LEVEL_INFO);
 
-      auto udpClientHelper = FairUdpHelper{serverAddress};
-      for (auto iter = wifiStaNodes.Begin (); iter != wifiStaNodes.End (); ++iter)
-        {
-          if (EXCLUSIVE_SENDER && NUM_UAVS <= ::std::distance (wifiStaNodes.Begin (), iter))
-            {
-              break;
-            }
+      FdpServerHelper server;
+      auto server_app = server.Install(p2pNodes.Get(SpecialNodes::P2P_SERVER));
+      server_app.Start(Seconds(0));
 
-          auto udpClient = udpClientHelper.Install (*iter).Get (0);
-          udpClient->SetStartTime (Seconds (0));
-          clientApps.Add (udpClient);
 
-          auto const scheduleDelay = MilliSeconds (rng->GetInteger (0, 1000));
-          auto udpClientRawPtr = static_cast<FairUdpApp *> (&(*udpClient));
-          Simulator::Schedule (scheduleDelay, &FairUdpApp::SendStream, udpClientRawPtr, &dummyData);
-        }
+      FdpClientHelper client{serverAddress};
+      auto client_apps = client.Install(wifiStaNodes);
+      client_apps.Start(Seconds(1));
     }
   else // if (PROTOCOL == "udp")
     {
-      auto udpServerApp = UdpServerHelper{serverPort}.Install (p2pNodes.Get (SpecialNodes::P2P_SERVER)).Get (0);
-      udpServerApp->SetStartTime (Seconds (0));
-      udpServerApp->SetStopTime (Seconds (SIMUL_TIME));
+      UdpServerHelper udpServerHelper{serverPort};
+      auto udpServer = udpServerHelper.Install(p2pNodes.Get(SpecialNodes::P2P_SERVER));
+      udpServer.Start(Seconds(0));
 
       uint32_t max_packet_size = 1024;
-      auto udpClientHelper = UdpClientHelper{serverIpv4, serverPort};
+      UdpClientHelper udpClientHelper{serverIpv4, serverPort};
       udpClientHelper.SetAttribute ("MaxPackets", UintegerValue (UINT32_MAX));
       udpClientHelper.SetAttribute ("Interval", TimeValue (MilliSeconds (1)));
       udpClientHelper.SetAttribute ("PacketSize", UintegerValue (max_packet_size));
 
-      for (auto iter = wifiStaNodes.Begin (); iter != wifiStaNodes.End (); ++iter)
-        {
-          if (EXCLUSIVE_SENDER && NUM_UAVS <= ::std::distance (wifiStaNodes.Begin (), iter))
-            {
-              break;
-            }
-
-          auto udpClient = udpClientHelper.Install (*iter).Get (0);
-          udpClient->SetStartTime (Seconds (0));
-          clientApps.Add (udpClient);
-        }
+      auto udpClients = udpClientHelper.Install(wifiStaNodes);
+      udpClients.Start(Seconds(1));
     }
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -231,33 +191,22 @@ int main (int argc, char *argv[])
   auto tcpServerHelper = PacketSinkHelper{"ns3::TcpSocketFactory", serverAddress};
   auto tcpServerApp = tcpServerHelper.Install (p2pNodes.Get (SpecialNodes::P2P_SERVER)).Get (0);
   tcpServerApp->SetStartTime (Seconds (0));
-  tcpServerApp->SetStopTime (Seconds (SIMUL_TIME));
 
   // https://www.nsnam.org/doxygen/tcp-star-server_8cc_source.html
   auto tcpClientHelper = OnOffHelper{"ns3::TcpSocketFactory", p2pInterfaces.GetAddress (SpecialNodes::P2P_SERVER)};
   tcpClientHelper.SetAttribute ("Remote", AddressValue{serverAddress});
-  for (auto iter = wifiStaNodes.Begin (); iter != wifiStaNodes.End (); ++iter)
-    {
-      if (EXCLUSIVE_SENDER && ::std::distance (wifiStaNodes.Begin (), iter) < NUM_UAVS)
-        {
-          continue;
-        }
-
-      auto tcpClient = tcpClientHelper.Install (*iter).Get (0);
-      tcpClient->SetAttribute ("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=10]"));
-      tcpClient->SetAttribute ("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=10]"));
-      tcpClient->SetStartTime (Seconds (0));
-      clientApps.Add (tcpClient);
-    }
+  tcpClientHelper.SetAttribute("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=10]"));
+  tcpClientHelper.SetAttribute("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=10]"));
+  auto tcpClients = tcpClientHelper.Install(wifiStaNodes);
+  tcpClients.Start(Seconds(1));
 
   // generate trace file
+  // p2pHelper.EnablePcapAll (PROTOCOL);
   phy.SetPcapDataLinkType (WifiPhyHelper::DLT_IEEE802_11_RADIO);
-  p2pHelper.EnablePcapAll (PROTOCOL);
   phy.EnablePcap (PROTOCOL, apDevices.Get (SpecialNodes::WIFI_AP));
 
   Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 
-  clientApps.Stop (Seconds (SIMUL_TIME));
   Simulator::Stop (Seconds (SIMUL_TIME));
   Simulator::Run ();
   Simulator::Destroy ();

@@ -145,44 +145,43 @@ FdpClientConnection& FdpServer::GetConnection(Address address)
             Inet6SocketAddress::IsMatchingType(address));
   if (m_connections.find(address) == std::end(m_connections))
     {
-      m_connections.emplace(address);
+      m_connections.emplace(address, FdpClientConnection{address});
     }
-  return *(&m_connections[address]);
+  return m_connections.at(address);
 }
 
-FdpServer::FeedbackType
+fdp::FeedbackType
 FdpClientConnection::DetermineFeedback(FairUdpHeader header) const
 {
   if (m_seq == header.GetSequence())
     {
-      return FdpServer::FeedbackType::OK;
+      return fdp::FeedbackType::OK;
     }
   else
     {
-      return FdpServer::FeedbackType::SAME_NACK;
+      return fdp::FeedbackType::SAME_NACK;
     }
-  return FdpServer::FeedbackType::NEW_NACK;
+  return fdp::FeedbackType::NEW_NACK;
 }
 
-FdpClientConnection::FdpClientConnection(Address address):
-  m_address(address)
+FdpClientConnection::FdpClientConnection(Address address)
 {
   NS_LOG_FUNCTION (this << address);
 }
 
-Ptr<Packet> FdpClientConnection::GenerateFeedback(FdpServer::FeedbackType ft,
+Ptr<Packet> FdpClientConnection::GenerateFeedback(fdp::FeedbackType ft,
                                                   FairUdpHeader header)
 {
   switch (ft)
     {
-    case FdpServer::FeedbackType::OK:
+    case fdp::FeedbackType::OK:
       m_seq++;
       return {nullptr};
-    case FdpServer::FeedbackType::NEW_NACK:
+    case fdp::FeedbackType::NEW_NACK:
       m_nack_seq++;
       m_seq = header.GetSequence() + 1;
       return MakeNack();
-    case FdpServer::FeedbackType::SAME_NACK:
+    case fdp::FeedbackType::SAME_NACK:
       m_seq = header.GetSequence() + 1;
       return MakeNack();
     default:
@@ -197,7 +196,7 @@ Ptr<Packet> FdpClientConnection::MakeNack() const
   header |= FairUdpHeader::Bit::NACK;
   header.SetNackSequence(m_nack_seq);
   header.SetSequence(m_seq);
-  Ptr<Packet> nack = CreateObject<Packet>();
+  Ptr<Packet> nack = Create<Packet>();
   nack->AddHeader(header);
   return nack;
 }
@@ -206,7 +205,7 @@ Ptr<Packet> FdpClientConnection::MakeReset() const
 {
   FairUdpHeader header;
   header |= FairUdpHeader::Bit::RESET;
-  Ptr<Packet> reset = CreateObject<Packet>();
+  Ptr<Packet> reset = Create<Packet>();
   reset->AddHeader(header);
   return reset;
 }

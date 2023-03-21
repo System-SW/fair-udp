@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <utility>
 #include "fdp-client-server-helper.h"
+#include "ns3/socket.h"
 #include "fdp-server.h"
 #include "fdp-client.h"
 #include "ns3/uinteger.h"
@@ -56,7 +57,7 @@ FdpServerHelper::Install(NodeContainer c) const
   ApplicationContainer apps;
   std::for_each(c.Begin(), c.End(), [&apps, this](auto node)
   {
-    InstallPriv(node);
+    apps.Add(InstallPriv(node));
   });
 
   return apps;
@@ -65,7 +66,7 @@ FdpServerHelper::Install(NodeContainer c) const
 Ptr<Application>
 FdpServerHelper::InstallPriv(Ptr<Node> node) const
 {
-  auto app = m_factory.Create<FdpServerHelper>();
+  auto app = m_factory.Create<FdpServer>();
   node->AddApplication(app);
   return app;
 }
@@ -104,9 +105,9 @@ ApplicationContainer
 FdpClientHelper::Install(NodeContainer c) const
 {
   ApplicationContainer apps;
-  std::for_each(apps.Begin(), apps.End(), [&apps, this](auto node)
+  std::for_each(c.Begin(), c.End(), [&apps, this](auto node)
   {
-    InstallPriv(node);
+    apps.Add(InstallPriv(node));
   });
 
   return apps;
@@ -115,7 +116,7 @@ FdpClientHelper::Install(NodeContainer c) const
 Ptr<Application>
 FdpClientHelper::InstallPriv(Ptr<Node> node) const
 {
-  auto app = m_factory.Create<FdpClientHelper>();
+  auto app = m_factory.Create<FdpClient>();
   node->AddApplication(app);
   return app;
 }

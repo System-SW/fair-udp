@@ -149,27 +149,6 @@ FdpClient::StartApplication ()
         }
     }
 
-#ifdef NS3_LOG_ENABLE
-  std::stringstream peerAddressStringStream;
-  if (Ipv4Address::IsMatchingType (m_serverAddress))
-    {
-      peerAddressStringStream << Ipv4Address::ConvertFrom (m_serverAddress);
-    }
-  else if (Ipv6Address::IsMatchingType (m_serverAddress))
-    {
-      peerAddressStringStream << Ipv6Address::ConvertFrom (m_serverAddress);
-    }
-  else if (InetSocketAddress::IsMatchingType (m_serverAddress))
-    {
-      peerAddressStringStream << InetSocketAddress::ConvertFrom (m_serverAddress).GetIpv4 ();
-    }
-  else if (Inet6SocketAddress::IsMatchingType (m_serverAddress))
-    {
-      peerAddressStringStream << Inet6SocketAddress::ConvertFrom (m_serverAddress).GetIpv6 ();
-    }
-  m_peerAddressString = peerAddressStringStream.str();
-#endif // NS3_LOG_ENABLE
-
   m_socket->SetRecvCallback (MakeCallback(&FdpClient::HandleRecv, this));
   m_sendEvent = Simulator::Schedule (Seconds (0.0), &FdpClient::Send, this);
 }
