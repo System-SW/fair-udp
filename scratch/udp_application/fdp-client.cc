@@ -15,8 +15,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * Author: Amine Ismail <amine.ismail@sophia.inria.fr>
- *                      <amine.ismail@udcast.com>
+ * Author: Chang-Hui Kim <kch9001@gmail.com>
  */
 #include "ns3/log.h"
 #include "ns3/ipv4-address.h"
@@ -39,20 +38,35 @@ NS_OBJECT_ENSURE_REGISTERED (FdpClient);
 TypeId FdpClient::GetTypeId ()
 {
   static TypeId tid =
-      TypeId ("ns3::FdpClient")
-          .SetParent<Application> ()
-          .SetGroupName ("Applications")
-          .AddConstructor<FdpClient> ()
-          .AddAttribute ("MinInterval", "Minimum packet transfer interval limit", TimeValue (MilliSeconds (100)),
-                         MakeTimeAccessor (&FdpClient::m_min_interval), MakeTimeChecker ())
-          .AddAttribute ("MaxInterval", "Maximum packet transfer interval limit", TimeValue (Seconds (1.0)),
-                         MakeTimeAccessor (&FdpClient::m_max_interval), MakeTimeChecker ())
-          .AddAttribute ("PacketSize", "The packet size that this client transfer (KB)", UintegerValue (512),
-                         MakeUintegerAccessor (&FdpClient::m_size), MakeUintegerChecker<uint32_t> (1024))
-          .AddAttribute ("RemoteAddress", "The destination Address of the FDP Client", AddressValue (),
-                         MakeAddressAccessor (&FdpClient::m_serverAddress), MakeAddressChecker ())
-          .AddAttribute ("RemotePort", "The destination port of the FDP Server", UintegerValue (19574),
-                         MakeUintegerAccessor (&FdpClient::m_serverPort), MakeUintegerChecker<uint16_t> ());
+    TypeId ("ns3::FdpClient")
+    .SetParent<Application> ()
+    .SetGroupName ("Applications")
+    .AddConstructor<FdpClient> ()
+    .AddAttribute ("MinInterval",
+                   "Minimum packet transfer interval limit",
+                   TimeValue (MilliSeconds (100)),
+                   MakeTimeAccessor (&FdpClient::m_min_interval),
+                   MakeTimeChecker ())
+    .AddAttribute ("MaxInterval",
+                   "Maximum packet transfer interval limit",
+                   TimeValue (Seconds (1.0)),
+                   MakeTimeAccessor (&FdpClient::m_max_interval),
+                   MakeTimeChecker ())
+    .AddAttribute ("PacketSize",
+                   "The packet size that this client transfer (bytes)",
+                   UintegerValue (512),
+                   MakeUintegerAccessor (&FdpClient::m_size),
+                   MakeUintegerChecker<uint32_t> (1024))
+    .AddAttribute ("RemoteAddress",
+                   "The destination Address of the FDP Client",
+                   AddressValue (),
+                   MakeAddressAccessor (&FdpClient::m_serverAddress),
+                   MakeAddressChecker ())
+    .AddAttribute ("RemotePort",
+                   "The destination port of the FDP Server",
+                   UintegerValue (19574),
+                   MakeUintegerAccessor (&FdpClient::m_serverPort),
+                   MakeUintegerChecker<uint16_t> ());
   return tid;
 }
 
@@ -156,9 +170,7 @@ FdpClient::StartApplication ()
   m_peerAddressString = peerAddressStringStream.str();
 #endif // NS3_LOG_ENABLE
 
-  // XXX: Implement this
-  // m_socket->SetRecvCallback (MakeNullCallback<void, Ptr<Socket> > ());
-  // m_socket->SetAllowBroadcast (true);
+  m_socket->SetRecvCallback (MakeCallback(&FdpClient::HandleRecv, this));
   m_sendEvent = Simulator::Schedule (Seconds (0.0), &FdpClient::Send, this);
 }
 
@@ -183,6 +195,55 @@ FdpClient::Send ()
   packet->AddHeader(header);
 
   m_socket->Send(packet);
-  // XXX: add congestion control to dynamically adjust packet transmission interval
-  m_sendEvent = Simulator::Schedule(Seconds(10), &FdpClient::Send, this);
+  m_sendEvent = Simulator::Schedule(GetTransferInterval(), &FdpClient::Send, this);
+}
+
+void FdpClient::HandleRecv(Ptr<Socket> socket)
+{
+  NS_LOG_FUNCTION (this);
+  Ptr<Packet> packet;
+  Address from;
+  while ((packet = socket->RecvFrom(from)) && packet->GetSize() != 0)
+    {
+      FairUdpHeader header;
+      packet->RemoveHeader(header);
+      if (m_nack_seq.get() < header.GetNackSequence().get())
+        {
+          m_nack_seq = header.GetNackSequence();
+          ReduceBandwidth();
+        }
+      else if (m_nack_seq.get() == header.GetNackSequence().get())
+        {
+          ReduceBandwidth();
+        }
+    }
+}
+
+void FdpClient::ReduceBandwidth()
+{
+  m_bandwidth /= 2;
+  auto min_bandwidth = (m_size / m_max_interval.GetSeconds());
+  if (m_bandwidth < min_bandwidth)
+    {
+      m_bandwidth = min_bandwidth;
+    }
+}
+
+Time FdpClient::GetTransferInterval()
+{
+  auto max_bandwidth = (m_size / m_min_interval.GetSeconds());
+  auto min_bandwidth = (m_size / m_max_interval.GetSeconds());
+  m_bandwidth++;
+  if (m_bandwidth < min_bandwidth)
+    {
+      m_bandwidth = (m_size / m_min_interval.GetSeconds());
+      return m_min_interval;
+    }
+
+  if (m_bandwidth > max_bandwidth)
+    {
+      m_bandwidth = (m_size / m_max_interval.GetSeconds());
+      return m_max_interval;
+    }
+  return Seconds(static_cast<float>(m_size) / m_bandwidth);
 }

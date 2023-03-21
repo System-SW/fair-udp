@@ -24,6 +24,7 @@
 #include "ns3/event-id.h"
 #include "ns3/ptr.h"
 #include "ns3/ipv4-address.h"
+#include "fair-udp-header.h"
 
 namespace ns3
 {
@@ -51,10 +52,22 @@ namespace ns3
     void StopApplication() override;
 
     void Send();
+    void HandleRecv(Ptr<Socket> socket);
 
+    // for congestion control
     Time m_min_interval{0};
     Time m_max_interval{0};
-    uint32_t m_size{0};
+    uint32_t m_size{0}; // packet payload size in bytes
+
+    // default 1024 bytes/s (changes during congestion control)
+    uint64_t m_bandwidth{1024};
+    nack_seq_t m_nack_seq{0};
+    sequence_t m_seq{0};
+
+    void ReduceBandwidth();
+    Time GetTransferInterval();
+
+    // Ip
     Address m_serverAddress;
     uint16_t m_serverPort{0};
 
