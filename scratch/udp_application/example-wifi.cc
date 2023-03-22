@@ -152,7 +152,7 @@ int main (int argc, char *argv[])
 
   if (PROTOCOL == "fdp")
     {
-      LogComponentEnable ("FdpClient", LOG_LEVEL_INFO);
+      // LogComponentEnable ("FdpClient", LOG_LEVEL_INFO);
       // LogComponentEnable ("FdpServer", LOG_LEVEL_INFO);
 
       FdpServerHelper server;
@@ -162,7 +162,7 @@ int main (int argc, char *argv[])
 
       FdpClientHelper client{serverAddress};
       client.SetAttribute("MinInterval", TimeValue(MilliSeconds(1)));
-      client.SetAttribute("MaxInterval", TimeValue(MilliSeconds(17)));
+      client.SetAttribute("MaxInterval", TimeValue(MilliSeconds(50)));
       auto client_apps = client.Install(wifiStaNodes);
       client_apps.Start(Seconds(1));
     }

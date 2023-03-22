@@ -204,9 +204,9 @@ void FdpClient::HandleRecv(Ptr<Socket> socket)
       if (header.IsOn<FairUdpHeader::Bit::NACK>())
         {
           NS_LOG_INFO("NACK");
-          m_reset_successed = true;
           if (m_nack_seq.get() < header.GetNackSequence().get())
             {
+              m_reset_successed = true;
               m_nack_seq = header.GetNackSequence();
               ReduceBandwidth();
             }
@@ -237,7 +237,7 @@ Time FdpClient::GetTransferInterval()
 {
   auto max_bandwidth = (m_size / m_min_interval.GetSeconds());
   auto min_bandwidth = (m_size / m_max_interval.GetSeconds());
-  m_bandwidth++;
+  m_bandwidth += m_size;
   if (m_bandwidth < min_bandwidth)
     {
       m_bandwidth = min_bandwidth;
