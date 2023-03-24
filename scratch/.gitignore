@@ -5,3 +5,4 @@
 !scratch-simulator.cc
 !CMakeLists.txt
 !udp_application
+!CoAP
