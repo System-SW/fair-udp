@@ -92,9 +92,10 @@ uint8_t CoAPHeader::GetType() const
 }
 
 // use only lower 2bits
-void CoAPHeader::SetType(uint8_t type)
+void CoAPHeader::SetType(CoAPHeader::Type type)
 {
-  m_fixed_hdr.slot[0] |= ((0x3 & type) << 4);
+  auto type_val = static_cast<uint8_t>(type);
+  m_fixed_hdr.slot[0] |= ((0x3 & type_val) << 4);
 }
 
 uint8_t CoAPHeader::GetTKL() const
@@ -108,25 +109,30 @@ void CoAPHeader::SetTKL(uint8_t tkl)
   m_fixed_hdr.slot[0] |= (0xF & tkl);
 }
 
-uint8_t CoAPHeader::GetClass() const
+CoAPHeader::Class CoAPHeader::GetClass() const
 {
-  return (m_fixed_hdr.slot[1] >> 5) & 0x07;
+  return CoAPHeader::Class((m_fixed_hdr.slot[1] >> 5) & 0x07);
 }
 
 // use only lower
-void CoAPHeader::SetClass(uint8_t cls)
+void CoAPHeader::SetClass(CoAPHeader::Class cls)
 {
-  m_fixed_hdr.slot[1] |= ((0x7 & cls) << 5);
+  auto cls_val = static_cast<uint8_t>(cls);
+  m_fixed_hdr.slot[1] |= ((0x7 & cls_val) << 5);
 }
 
-uint8_t CoAPHeader::GetCode() const
+template<>
+void CoAPHeader::SetCode<CoAPHeader::Class::METHOD>(CoAPHeader::Method code)
 {
-  return (m_fixed_hdr.slot[1]) & 0x1F;
+  auto method = static_cast<uint8_t>(code);
+  m_fixed_hdr.slot[1] |= (0x1F & method);
 }
 
-void CoAPHeader::SetCode(uint8_t code)
+template <>
+void CoAPHeader::SetCode<CoAPHeader::Class::SUCCESS>(CoAPHeader::Success code)
 {
-  m_fixed_hdr.slot[1] |= (0x1F & code);
+  auto success = static_cast<uint8_t>(code);
+  m_fixed_hdr.slot[1] |= (0x1F & success);
 }
 
 uint16_t CoAPHeader::GetMID() const
@@ -173,6 +179,6 @@ CoAPHeader::PreparePut(CoAPHeader &hdr, uint8_t tkl, uint64_t token, uint16_t mi
   hdr.SetTKL(tkl);
   hdr.SetMID(mid);
   hdr.SetClass(Class::METHOD);
-  hdr.SetCode(Method::PUT);
+  hdr.SetCode<Class::METHOD>(Method::PUT);
   hdr.SetToken(token);
 }

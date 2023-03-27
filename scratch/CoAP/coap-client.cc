@@ -164,7 +164,7 @@ void CoAPClient::HandleRecv(Ptr<Socket> socket)
           using Class = CoAPHeader::Class;
         case Class::METHOD:
           using Method = CoAPHeader::Method;
-          switch (hdr.GetCode())
+          switch (hdr.GetCode<Class::METHOD>())
             {
             case Method::PUT:
               HandlePut(p, addr);

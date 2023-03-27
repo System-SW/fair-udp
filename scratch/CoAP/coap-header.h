@@ -23,6 +23,69 @@ namespace ns3
   class CoAPHeader : public Header
   {
   public:
+    enum class Type : uint8_t   // 2bits
+      {
+        // Request
+        CON = 0,
+        NON = 1,
+
+        // Response
+        ACK = 2,
+        RST = 3,
+      };
+
+    enum class Class : uint8_t
+      {
+        METHOD = 0,
+        SUCCESS = 2,
+        CLIENT_ERR = 4,
+        SERVER_ERR = 5,
+        SIGNAL = 7,
+      };
+
+    enum class Method : uint8_t
+      {
+        EMPTY = 0,
+        GET = 1,
+        POST = 2,
+        PUT = 3,
+        DELETE = 4,
+        FETCH = 5,
+        PATCH = 6,
+        iPATCH = 7,
+      };
+
+    enum class Success : uint8_t
+      {
+        CREATED = 1,
+        DELETED = 2,
+        VALIED = 3,
+        CHANGED = 4,
+        CONTENT = 5,
+        CONTINUE = 31,
+      };
+
+    // Class to Code Type Mapper
+    template <CoAPHeader::Class cls>
+    struct code_mapper
+    {
+    };
+
+    template<>
+    struct code_mapper<CoAPHeader::Class::METHOD>
+    {
+      using type = CoAPHeader::Method;
+    };
+
+    template<>
+    struct code_mapper<CoAPHeader::Class::SUCCESS>
+    {
+      using type = CoAPHeader::Success;
+    };
+    template <CoAPHeader::Class cls>
+    using code_t = typename code_mapper<cls>::type;
+    // Class to Code Type Mapper
+
     static TypeId GetTypeId();
 
     TypeId GetInstanceTypeId() const override;
@@ -47,82 +110,47 @@ namespace ns3
     constexpr static uint8_t EOH = 0xff; /* header end flag */
     // and below is payload
 
-  public:
-    uint8_t GetVersion() const;
-
+  private:
     // use only lower 2bits
     void SetVersion(uint8_t version);
 
-    uint8_t GetType() const;
-
     // use only lower 2bits
-    void SetType(uint8_t type);
-
-    uint8_t GetTKL() const;
+    void SetType(CoAPHeader::Type type);
 
     // use only lower 4bits
     void SetTKL(uint8_t tkl);
 
-    uint8_t GetClass() const;
-
     // use only lower
-    void SetClass(uint8_t cls);
+    void SetClass(CoAPHeader::Class cls);
 
-    uint8_t GetCode() const;
-
-    void SetCode(uint8_t code);
-
-    uint16_t GetMID() const;
+    template <CoAPHeader::Class cls, typename CodeType = CoAPHeader::code_t<cls>>
+    void SetCode(CodeType code);
 
     void SetMID(uint16_t mid);
 
-    uint64_t GetToken() const;
-
     void SetToken(uint64_t token);
 
+  public:
+    uint8_t GetVersion() const;
+
+    uint8_t GetType() const;
+
+    uint8_t GetTKL() const;
+
+    CoAPHeader::Class GetClass() const;
+
+    template <CoAPHeader::Class cls>
+    code_t<cls> GetCode() const
+    {
+      uint8_t code = (m_fixed_hdr.slot[1]) & 0x1F;
+      return static_cast<code_t<cls>>(code);
+    }
+
+    uint16_t GetMID() const;
+
+    uint64_t GetToken() const;
+
     // Prepare CoAP Header
-    enum Type : uint8_t   // 2bits
-      {
-        // Request
-        CON = 0,
-        NON = 1,
-
-        // Response
-        ACK = 2,
-        RST = 3,
-      };
-
-    enum Class : uint8_t
-      {
-        METHOD = 0,
-        SUCCESS = 2,
-        CLIENT_ERR = 4,
-        SERVER_ERR = 5,
-        SIGNAL = 7,
-      };
-
-    enum Method : uint8_t
-      {
-        EMPTY = 0,
-        GET = 1,
-        POST = 2,
-        PUT = 3,
-        DELETE = 4,
-        FETCH = 5,
-        PATCH = 6,
-        iPATCH = 7,
-      };
-
-    enum Success : uint8_t
-      {
-        CREATED = 1,
-        DELETED = 2,
-        VALIED = 3,
-        CHANGED = 4,
-        CONTENT = 5,
-        CONTINUE = 31,
-      };
-
     static void PreparePut(CoAPHeader &hdr, uint8_t tkl, uint64_t token, uint16_t mid, bool con = false);
 
   };
