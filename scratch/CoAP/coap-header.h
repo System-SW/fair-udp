@@ -70,18 +70,6 @@ namespace ns3
     struct code_mapper
     {
     };
-
-    template<>
-    struct code_mapper<CoAPHeader::Class::METHOD>
-    {
-      using type = CoAPHeader::Method;
-    };
-
-    template<>
-    struct code_mapper<CoAPHeader::Class::SUCCESS>
-    {
-      using type = CoAPHeader::Success;
-    };
     template <CoAPHeader::Class cls>
     using code_t = typename code_mapper<cls>::type;
     // Class to Code Type Mapper
@@ -155,4 +143,15 @@ namespace ns3
 
   };
 
+  template<>
+  struct CoAPHeader::code_mapper<CoAPHeader::Class::METHOD>
+  {
+    using type = CoAPHeader::Method;
+  };
+
+  template<>
+  struct CoAPHeader::code_mapper<CoAPHeader::Class::SUCCESS>
+  {
+    using type = CoAPHeader::Success;
+  };
 }
