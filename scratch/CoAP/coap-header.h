@@ -111,8 +111,13 @@ namespace ns3
     // use only lower
     void SetClass(CoAPHeader::Class cls);
 
+    // use only lower
     template <CoAPHeader::Class cls, typename CodeType = CoAPHeader::code_t<cls>>
-    void SetCode(CodeType code);
+    void SetCode(CodeType code)
+    {
+      auto code_val = static_cast<uint8_t>(code);
+      m_fixed_hdr.slot[1] |= (0x1F & code_val);
+    }
 
     void SetMID(uint16_t mid);
 
@@ -139,7 +144,8 @@ namespace ns3
     uint64_t GetToken() const;
 
     // Prepare CoAP Header
-    static void PreparePut(CoAPHeader &hdr, uint8_t tkl, uint64_t token, uint16_t mid, bool con = false);
+    static void PreparePut(CoAPHeader &hdr, uint8_t tkl, uint64_t token, uint16_t mid,
+                           bool con = false);
 
   };
 

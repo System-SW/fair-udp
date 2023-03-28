@@ -121,13 +121,6 @@ void CoAPHeader::SetClass(CoAPHeader::Class cls)
   m_fixed_hdr.slot[1] |= ((0x7 & cls_val) << 5);
 }
 
-template<>
-void CoAPHeader::SetCode<CoAPHeader::Class::METHOD>(CoAPHeader::Method code)
-{
-  auto method = static_cast<uint8_t>(code);
-  m_fixed_hdr.slot[1] |= (0x1F & method);
-}
-
 template <>
 void CoAPHeader::SetCode<CoAPHeader::Class::SUCCESS>(CoAPHeader::Success code)
 {
@@ -165,7 +158,8 @@ void CoAPHeader::SetToken(uint64_t token)
 }
 
 void
-CoAPHeader::PreparePut(CoAPHeader &hdr, uint8_t tkl, uint64_t token, uint16_t mid, bool con)
+CoAPHeader::PreparePut(CoAPHeader &hdr, uint8_t tkl, uint64_t token, uint16_t mid,
+                       bool con)
 {
   if (con)
     {
