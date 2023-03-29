@@ -111,7 +111,7 @@ void CoAPServer::HandleRecv(Ptr<Socket> socket)
   while (Ptr<Packet> p = socket->RecvFrom(addr))
     {
       CoAPHeader hdr;
-      p-> PeekHeader(hdr);
+      p->PeekHeader(hdr);
 
       switch (hdr.GetClass())
         {
@@ -135,4 +135,22 @@ void CoAPServer::HandleRecv(Ptr<Socket> socket)
         }
     }
 
+}
+
+void
+CoAPServer::SendPacket(Ptr<Packet> packet, Address addr)
+{
+  NS_LOG_FUNCTION(this);
+
+  // very week and dirty condition check
+  // to make this code clear, additional address type check is mendatory
+  if (m_socket != 0)
+    {
+      m_socket->SendTo(packet, 0, addr);
+    }
+
+  if (m_socket6 != 0)
+    {
+      m_socket->SendTo(packet, 0, addr);
+    }
 }

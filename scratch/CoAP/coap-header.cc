@@ -15,7 +15,7 @@
  *
  * Author: Chang-Hui Kim <kch9001@gmail.com>
  */
-#include <random>
+#include "ns3/packet.h"
 #include "coap-header.h"
 
 using namespace ns3;
@@ -175,4 +175,26 @@ CoAPHeader::PreparePut(CoAPHeader &hdr, uint8_t tkl, uint64_t token, uint16_t mi
   hdr.SetClass(Class::METHOD);
   hdr.SetCode<Class::METHOD>(Method::PUT);
   hdr.SetToken(token);
+}
+
+template <>
+Ptr<Packet>
+CoAPHeader::MakeResponse<CoAPHeader::Method::PUT, false>(CoAPHeader request_hdr,
+                                                         uint16_t mid,
+                                                         CoAPHeader::Success code)
+{
+  Ptr<Packet> response = Create<Packet>();
+  CoAPHeader hdr;
+  auto tkl = request_hdr.GetTKL();
+  auto token = request_hdr.GetToken();
+
+  hdr.SetTKL(tkl);
+  hdr.SetMID(mid);
+  hdr.SetType(CoAPHeader::Type::NON);
+  hdr.SetClass(CoAPHeader::Class::SUCCESS);
+  hdr.SetCode<CoAPHeader::Class::SUCCESS>(code);
+  hdr.SetToken(token);
+
+  response->AddHeader(hdr);
+  return response;
 }

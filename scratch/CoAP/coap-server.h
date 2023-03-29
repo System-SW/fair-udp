@@ -53,7 +53,10 @@ namespace ns3
     template <CoAPHeader::Method M>
     void HandleMethod(Ptr<Packet> request, Address addr);
 
+    void SendPacket(Ptr<Packet> packet, Address addr);
+
     // uint32_t m_size{0}; // packet payload size in bytes (for GET)
+    uint16_t m_mid{0};     // message id
 
     uint16_t m_Port{5683};
     Ptr<Socket> m_socket{0};

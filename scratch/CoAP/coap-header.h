@@ -22,6 +22,7 @@
 
 namespace ns3
 {
+  class Packet;
 
   class CoAPHeader : public Header
   {
@@ -149,6 +150,12 @@ namespace ns3
     // Prepare CoAP Header
     static void PreparePut(CoAPHeader &hdr, uint8_t tkl, uint64_t token, uint16_t mid,
                            bool con = false);
+
+    template <CoAPHeader::Method M, bool CON>
+    static Ptr<Packet> MakeResponse(CoAPHeader request_hdr, uint16_t mid, CoAPHeader::Success code);
+
+    // template <CoAPHeader::Method M>
+    // static Ptr<Packet> MakeResponse(CoAPHeader request_hdr, CoAPHeader::ServerErr err);
 
   };
 

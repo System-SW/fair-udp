@@ -32,15 +32,21 @@ NS_LOG_COMPONENT_DEFINE("CoAPServerMethods");
 
 template <>
 void CoAPServer::HandleMethod<CoAPHeader::Method::PUT>
-(Ptr<Packet> ptr, Address addr)
+(Ptr<Packet> request, Address addr)
 {
   NS_LOG_FUNCTION(this);
-  CoAPHeader hdr;
-  ptr->RemoveHeader(hdr);
+  CoAPHeader request_hdr;
+  request->RemoveHeader(request_hdr);
 
-  if (hdr.GetType() == CoAPHeader::Type::NON)
+  if (request_hdr.GetType() == CoAPHeader::Type::NON)
     {
       NS_LOG_INFO("Receive PUT");
+      auto response =
+        CoAPHeader::MakeResponse<CoAPHeader::Method::PUT,
+                                 false>(request_hdr,
+                                        m_mid++,
+                                        CoAPHeader::Success::CREATED);
+      SendPacket(response, addr);
     }
   else // CON
     {

@@ -156,7 +156,7 @@ void CoAPClient::HandleRecv(Ptr<Socket> socket)
   while (Ptr<Packet> p = socket->RecvFrom(addr))
     {
       CoAPHeader hdr;
-      p-> PeekHeader(hdr);
+      p->PeekHeader(hdr);
 
       switch (hdr.GetClass())
         {
