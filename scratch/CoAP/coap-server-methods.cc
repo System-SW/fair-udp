@@ -24,31 +24,26 @@
 #include "ns3/socket-factory.h"
 #include "ns3/packet.h"
 #include "ns3/uinteger.h"
-#include "coap-header.h"
-#include "coap-client.h"
+#include "coap-server.h"
 
 using namespace ns3;
 
-NS_LOG_COMPONENT_DEFINE ("CoAPClientMethods");
+NS_LOG_COMPONENT_DEFINE("CoAPServerMethods");
 
-void
-CoAPClient::Put ()
-{
-  NS_LOG_FUNCTION (this);
-  NS_ASSERT (m_sendEvent.IsExpired());
-
-  CoAPHeader hdr;
-  CoAPHeader::PreparePut(hdr, 0, 0, m_mid++);
-  Ptr<Packet> packet = Create<Packet>(m_size);
-  packet->AddHeader(hdr);
-
-  m_socket->Send(packet);
-  m_sendEvent = Simulator::Schedule(Seconds(0.1), &CoAPClient::Put, this);
-}
-
-void
-CoAPClient::HandlePut(Ptr<Packet> packet, Address addr)
+template <>
+void CoAPServer::HandleMethod<CoAPHeader::Method::PUT>
+(Ptr<Packet> ptr, Address addr)
 {
   NS_LOG_FUNCTION(this);
-  NS_LOG_INFO("got put!");
+  CoAPHeader hdr;
+  ptr->RemoveHeader(hdr);
+
+  if (hdr.GetType() == CoAPHeader::Type::NON)
+    {
+      NS_LOG_INFO("Receive PUT");
+    }
+  else // CON
+    {
+
+    }
 }

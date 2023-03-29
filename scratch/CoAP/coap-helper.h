@@ -29,14 +29,30 @@
 
 namespace ns3
 {
-  class CoAPHelper
+  class CoAPClientHelper
   {
   public:
-    CoAPHelper();
+    CoAPClientHelper();
 
-    CoAPHelper(Address ip, uint16_t port);
+    CoAPClientHelper(Address ip, uint16_t port);
 
-    CoAPHelper(Address addr);
+    CoAPClientHelper(Address addr);
+
+    void SetAttribute(std::string name, const AttributeValue &value);
+
+    ApplicationContainer Install(Ptr<Node> node) const;
+    ApplicationContainer Install(NodeContainer c) const;
+
+  private:
+    Ptr<Application> InstallPriv(Ptr<Node> node) const;
+    ObjectFactory m_factory;
+  };
+
+
+  class CoAPServerHelper
+  {
+  public:
+    CoAPServerHelper();
 
     void SetAttribute(std::string name, const AttributeValue &value);
 

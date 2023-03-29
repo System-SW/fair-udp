@@ -24,7 +24,6 @@
 #include "ns3/socket-factory.h"
 #include "ns3/packet.h"
 #include "ns3/uinteger.h"
-#include "coap-header.h"
 #include "coap-client.h"
 
 using namespace ns3;
@@ -162,22 +161,18 @@ void CoAPClient::HandleRecv(Ptr<Socket> socket)
       switch (hdr.GetClass())
         {
           using Class = CoAPHeader::Class;
-        case Class::METHOD:
-          using Method = CoAPHeader::Method;
-          switch (hdr.GetCode<Class::METHOD>())
+        case Class::SUCCESS:
+          using Success = CoAPHeader::Success;
+          switch (hdr.GetCode<Class::SUCCESS>())
             {
-            case Method::PUT:
-              HandlePut(p, addr);
+            case Success::CREATED:
+              HandleResponse<Success::CREATED>(p, addr);
               break;
             default:
-              NS_ABORT_MSG("Not Implemented CoAP Method.");
+              NS_ABORT_MSG("Not Implemented CoAP Success Code.");
               break;
             }
-
-        case Class::SIGNAL:
-        case Class::CLIENT_ERR:
-        case Class::SERVER_ERR:
-        case Class::SUCCESS:
+        default:
           NS_ABORT_MSG("Not Implemented CoAP Classes.");
           break;
         }

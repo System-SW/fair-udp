@@ -20,6 +20,7 @@
 #include "ns3/csma-module.h"
 #include "ns3/internet-module.h"
 #include "coap-client.h"
+#include "coap-server.h"
 #include "coap-helper.h"
 
 using namespace ns3;
@@ -52,10 +53,15 @@ int main(int argc, char *argv[])
 
 
   NS_LOG_INFO ("Create Applications.");
-  CoAPHelper coap{serverAddress};
-  ApplicationContainer apps = coap.Install(n);
-  apps.Start(Seconds(1.0));
-  apps.Stop(Seconds(2.0));
+  CoAPClientHelper coap_client{serverAddress};
+  ApplicationContainer client_app = coap_client.Install(n.Get(0));
+  client_app.Start(Seconds(1.0));
+  client_app.Stop(Seconds(2.0));
+
+  CoAPServerHelper coap_server;
+  ApplicationContainer server_app = coap_server.Install(n.Get(1));
+  server_app.Start(Seconds(0));
+  server_app.Stop(Seconds(2.0));
 
   csma.EnablePcapAll("coap", true);
 

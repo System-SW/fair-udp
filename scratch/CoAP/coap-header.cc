@@ -55,7 +55,7 @@ void CoAPHeader::Serialize(Buffer::Iterator start) const
 
 uint32_t CoAPHeader::Deserialize(Buffer::Iterator start)
 {
-  m_fixed_hdr.merged = start.ReadNtohU32();
+  m_fixed_hdr.merged = start.ReadU32();
 
   auto tkl = GetTKL();
   union {
@@ -86,9 +86,9 @@ void CoAPHeader::SetVersion(uint8_t version)
   m_fixed_hdr.slot[0] |= ((0x3 & version) << 6);
 }
 
-uint8_t CoAPHeader::GetType() const
+CoAPHeader::Type CoAPHeader::GetType() const
 {
-  return (0x30 & m_fixed_hdr.slot[0]) >> 4;
+  return static_cast<CoAPHeader::Type>((0x30 & m_fixed_hdr.slot[0]) >> 4);
 }
 
 // use only lower 2bits

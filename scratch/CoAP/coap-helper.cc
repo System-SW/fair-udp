@@ -23,41 +23,42 @@
 #include "ns3/uinteger.h"
 #include "coap-helper.h"
 #include "coap-client.h"
+#include "coap-server.h"
 
 using namespace ns3;
 
-CoAPHelper::CoAPHelper ()
+CoAPClientHelper::CoAPClientHelper ()
 {
   m_factory.SetTypeId(CoAPClient::GetTypeId());
 }
 
-CoAPHelper::CoAPHelper (Address ip, uint16_t port):
-  CoAPHelper{}
+CoAPClientHelper::CoAPClientHelper (Address ip, uint16_t port):
+  CoAPClientHelper{}
 {
   SetAttribute("RemoteAddress", AddressValue(ip));
   SetAttribute("RemotePort", UintegerValue(port));
 }
 
-CoAPHelper::CoAPHelper (Address addr):
-  CoAPHelper{}
+CoAPClientHelper::CoAPClientHelper (Address addr):
+  CoAPClientHelper{}
 {
   SetAttribute("RemoteAddress", AddressValue(addr));
 }    
 
 void
-CoAPHelper::SetAttribute(std::string name, const AttributeValue &value)
+CoAPClientHelper::SetAttribute(std::string name, const AttributeValue &value)
 {
   m_factory.Set(name, value);
 }
 
 ApplicationContainer
-CoAPHelper::Install(Ptr<Node> node) const
+CoAPClientHelper::Install(Ptr<Node> node) const
 {
   return { InstallPriv(node) };
 }
 
 ApplicationContainer
-CoAPHelper::Install(NodeContainer c) const
+CoAPClientHelper::Install(NodeContainer c) const
 {
   ApplicationContainer apps;
   std::for_each(c.Begin(), c.End(), [&apps, this](auto node)
@@ -69,9 +70,48 @@ CoAPHelper::Install(NodeContainer c) const
 }
 
 Ptr<Application>
-CoAPHelper::InstallPriv(Ptr<Node> node) const
+CoAPClientHelper::InstallPriv(Ptr<Node> node) const
 {
   auto app = m_factory.Create<CoAPClient>();
+  node->AddApplication(app);
+  return app;
+}
+
+// Server Helper
+
+CoAPServerHelper::CoAPServerHelper ()
+{
+  m_factory.SetTypeId(CoAPServer::GetTypeId());
+}
+
+void
+CoAPServerHelper::SetAttribute(std::string name, const AttributeValue &value)
+{
+  m_factory.Set(name, value);
+}
+
+ApplicationContainer
+CoAPServerHelper::Install(Ptr<Node> node) const
+{
+  return { InstallPriv(node) };
+}
+
+ApplicationContainer
+CoAPServerHelper::Install(NodeContainer c) const
+{
+  ApplicationContainer apps;
+  std::for_each(c.Begin(), c.End(), [&apps, this](auto node)
+  {
+    apps.Add(InstallPriv(node));
+  });
+
+  return apps;
+}
+
+Ptr<Application>
+CoAPServerHelper::InstallPriv(Ptr<Node> node) const
+{
+  auto app = m_factory.Create<CoAPServer>();
   node->AddApplication(app);
   return app;
 }

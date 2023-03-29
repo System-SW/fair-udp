@@ -16,8 +16,8 @@
  * Author: Chang-Hui Kim <kch9001@gmail.com>
  */
 #pragma once
-#ifndef COAP_NODE_H
-#define COAP_NODE_H
+#ifndef COAP_SERVER_H
+#define COAP_SERVER_H
 
 #include "ns3/application.h"
 #include "ns3/event-id.h"
@@ -30,19 +30,15 @@ namespace ns3
   class Socket;
   class Packet;
 
-  class CoAPClient : public Application
+  class CoAPServer : public Application
   {
   public:
     static TypeId GetTypeId();
 
-    CoAPClient();
+    CoAPServer();
 
-    virtual ~CoAPClient();
+    virtual ~CoAPServer();
     
-    void SetRemote(Address ip, uint16_t port);
-
-    void SetRemote(Address addr);
-
   protected:
     void DoDispose() override;
 
@@ -54,22 +50,15 @@ namespace ns3
     void HandleRecv(Ptr<Socket> socket);
 
     // Methods
-    void Put();
+    template <CoAPHeader::Method M>
+    void HandleMethod(Ptr<Packet> request, Address addr);
 
-    template <CoAPHeader::Success Response>
-    void HandleResponse(Ptr<Packet> response, Address addr);
+    // uint32_t m_size{0}; // packet payload size in bytes (for GET)
 
-    uint32_t m_size{0}; // packet payload size in bytes (for PUT)
-    uint16_t m_mid{0};  // message id
-
-    // Ip
-    Address m_Address;
-    uint16_t m_Port{0};
-
+    uint16_t m_Port{5683};
     Ptr<Socket> m_socket{0};
-    EventId m_sendEvent{EventId()};
+    Ptr<Socket> m_socket6{0};
   };
-
 }    
 
-#endif /* COAP_NODE_H */
+#endif /* COAP_SERVER_H */

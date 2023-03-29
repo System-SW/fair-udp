@@ -16,6 +16,9 @@
  * Author: Chang-Hui Kim <kch9001@gmail.com>
  */
 #include "ns3/header.h"
+#pragma once
+#ifndef COAP_HEADER_H
+#define COAP_HEADER_H
 
 namespace ns3
 {
@@ -126,7 +129,7 @@ namespace ns3
   public:
     uint8_t GetVersion() const;
 
-    uint8_t GetType() const;
+    CoAPHeader::Type GetType() const;
 
     uint8_t GetTKL() const;
 
@@ -161,3 +164,4 @@ namespace ns3
     using type = CoAPHeader::Success;
   };
 }
+#endif /* COAP_HEADER_H */
