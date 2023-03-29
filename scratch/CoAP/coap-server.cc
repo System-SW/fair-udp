@@ -54,6 +54,8 @@ CoAPServer::CoAPServer ()
 CoAPServer::~CoAPServer ()
 {
   NS_LOG_FUNCTION (this);
+  m_socket->Close();
+  m_socket6->Close();
 }
 
 void
@@ -142,15 +144,16 @@ CoAPServer::SendPacket(Ptr<Packet> packet, Address addr)
 {
   NS_LOG_FUNCTION(this);
 
-  // very week and dirty condition check
-  // to make this code clear, additional address type check is mendatory
-  if (m_socket != 0)
+  if (InetSocketAddress::IsMatchingType (addr))
     {
       m_socket->SendTo(packet, 0, addr);
     }
-
-  if (m_socket6 != 0)
+  else if (Inet6SocketAddress::IsMatchingType (addr))
     {
-      m_socket->SendTo(packet, 0, addr);
+      m_socket6->SendTo(packet, 0, addr);
+    }
+  else
+    {
+      NS_ABORT_MSG(this << "SendPacket Method requires InetSocketAddress.");
     }
 }

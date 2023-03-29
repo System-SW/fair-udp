@@ -65,6 +65,7 @@ CoAPClient::CoAPClient ()
 CoAPClient::~CoAPClient ()
 {
   NS_LOG_FUNCTION (this);
+  m_socket->Close();
 }
 
 void
