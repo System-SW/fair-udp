@@ -60,7 +60,7 @@ void FDPMessageHeader::Serialize(Buffer::Iterator start) const
   uint16_t field{0};
 
   field ^= (static_cast<uint16_t>(m_seq_bit) << 15);
-  field ^= (m_msg_seq << 12);
+  field ^= (uint16_t(m_msg_seq) << 12);
   field ^= (transform.combined << 1);
   start.WriteU16(field);
 }
