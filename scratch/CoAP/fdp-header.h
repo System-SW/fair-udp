@@ -96,8 +96,10 @@ namespace ns3
     void SetLatency(Time interval_ms);
 
   private:
-    uint16_t m_latency{0};
-    uint16_t m_field{0};
+    bool m_reset_bit{false};
+    bool m_seq_bit{false};
+    uint8_t m_msg_seq{0};
+    uint16_t m_latency{0};      // 12 bits
   };
 
 }
