@@ -131,6 +131,16 @@ void CoAPServer::HandleRecv(Ptr<Socket> socket)
               break;
             }
           break;
+
+        case Class::SIGNAL:
+          using Signal = CoAPHeader::Signal;
+          switch (hdr.GetCode<Class::SIGNAL>())
+            {
+            case Signal::PING:
+              ResponedToPing(hdr, addr);
+            default:
+              break;
+            }
         default:
           NS_ABORT_MSG("Not Implemented CoAP Classes.");
           break;

@@ -59,8 +59,15 @@ namespace ns3
     template <CoAPHeader::Success Response>
     void HandleResponse(Ptr<Packet> response, Address addr);
 
+    void SendPing(uint64_t token); // start ping-pong signaling
+
+    Time MeasureRTTWithPingPong(CoAPHeader pong_hdr);
+
     uint32_t m_size{0}; // packet payload size in bytes (for PUT)
     uint16_t m_mid{0};  // message id
+
+    Time m_ping_time{0};        // ping send time
+    Time m_Rtt{0};              // measured actual RTT
 
     // Ip
     Address m_Address;

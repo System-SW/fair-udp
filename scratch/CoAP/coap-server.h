@@ -55,6 +55,9 @@ namespace ns3
 
     void SendPacket(Ptr<Packet> packet, Address addr);
 
+    // send pong to respond to ping
+    void ResponedToPing(CoAPHeader ping_hdr, Address addr);
+
     // uint32_t m_size{0}; // packet payload size in bytes (for GET)
     uint16_t m_mid{0};     // message id
 

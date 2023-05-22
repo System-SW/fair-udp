@@ -62,3 +62,22 @@ void CoAPClient::HandleResponse<CoAPHeader::Success::CREATED>
 
     }
 }
+
+void
+CoAPClient::SendPing(uint64_t token)
+{
+  // XXX: hard coded token
+  auto ping_hdr = CoAPHeader::MakePing(2, 0x1234);
+  Ptr<Packet> ping = Create<Packet>();
+  ping->AddHeader(ping_hdr);
+  m_ping_time = Simulator::Now();
+  m_socket->Send(ping);
+}
+
+Time
+CoAPClient::MeasureRTTWithPingPong(CoAPHeader pong_hdr)
+{
+  m_Rtt = Simulator::Now() - m_ping_time;
+  m_ping_time = Time{0};
+  return m_Rtt;
+}

@@ -69,6 +69,16 @@ namespace ns3
         CONTINUE = 31,
       };
 
+    enum class Signal : uint8_t
+      {
+        UNASSIGNED = 0,
+        CSM = 1,
+        PING = 2,
+        PONG = 3,
+        RELEASE = 4,
+        ABORT = 5,
+      };
+
     // Class to Code Type Mapper
     template <CoAPHeader::Class cls>
     struct code_mapper
@@ -154,9 +164,11 @@ namespace ns3
     template <CoAPHeader::Method M, bool CON>
     static Ptr<Packet> MakeResponse(CoAPHeader request_hdr, uint16_t mid, CoAPHeader::Success code);
 
+    static CoAPHeader MakePing(uint8_t tkl, uint64_t token);
+    static CoAPHeader MakePong(CoAPHeader ping_hdr);
+
     // template <CoAPHeader::Method M>
     // static Ptr<Packet> MakeResponse(CoAPHeader request_hdr, CoAPHeader::ServerErr err);
-
   };
 
   template<>
@@ -169,6 +181,12 @@ namespace ns3
   struct CoAPHeader::code_mapper<CoAPHeader::Class::SUCCESS>
   {
     using type = CoAPHeader::Success;
+  };
+
+  template <>
+  struct CoAPHeader::code_mapper<CoAPHeader::Class::SIGNAL>
+  {
+    using type = CoAPHeader::Signal;
   };
 }
 #endif /* COAP_HEADER_H */

@@ -53,3 +53,11 @@ void CoAPServer::HandleMethod<CoAPHeader::Method::PUT>
 
     }
 }
+
+void CoAPServer::ResponedToPing(CoAPHeader ping_hdr, Address addr)
+{
+  auto pong_hdr = CoAPHeader::MakePong(ping_hdr);
+  Ptr<Packet> pong = Create<Packet>();
+  pong->AddHeader(pong_hdr);
+  SendPacket(pong, addr);
+}
