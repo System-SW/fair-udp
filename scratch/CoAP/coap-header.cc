@@ -203,6 +203,8 @@ CoAPHeader
 CoAPHeader::MakePing(uint8_t tkl, uint64_t token)
 {
   CoAPHeader hdr;
+  hdr.SetType(Type::NON);
+  hdr.SetClass(CoAPHeader::Class::SIGNAL);
   hdr.SetCode<CoAPHeader::Class::SIGNAL>(CoAPHeader::Signal::PING);
   hdr.SetTKL(tkl);
   hdr.SetToken(token);
@@ -213,6 +215,8 @@ CoAPHeader
 CoAPHeader::MakePong(CoAPHeader ping_hdr)
 {
   CoAPHeader hdr;
+  hdr.SetType(Type::NON);
+  hdr.SetClass(CoAPHeader::Class::SIGNAL);
   hdr.SetCode<CoAPHeader::Class::SIGNAL>(CoAPHeader::Signal::PONG);
   hdr.SetTKL(ping_hdr.GetTKL());
   hdr.SetToken(ping_hdr.GetToken());

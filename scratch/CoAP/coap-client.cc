@@ -138,7 +138,9 @@ CoAPClient::StartApplication ()
     }
 
 
+  m_socket->SetRecvCallback(MakeCallback(&CoAPClient::HandleRecv, this));
   m_sendEvent = Simulator::Schedule(Seconds(0.1), &CoAPClient::Put, this);
+  // Simulator::Schedule(Seconds(0.1), &CoAPClient::SendPing, this, 0x1234);
 }
 
 void
@@ -173,6 +175,19 @@ void CoAPClient::HandleRecv(Ptr<Socket> socket)
               NS_ABORT_MSG("Not Implemented CoAP Success Code.");
               break;
             }
+          break;
+        case Class::SIGNAL:
+          using Signal = CoAPHeader::Signal;
+          switch (hdr.GetCode<Class::SIGNAL>())
+            {
+            case Signal::PONG:
+              MeasureRTTWithPingPong(hdr);
+              break;
+            default:
+              NS_ABORT_MSG("Not Implemented CoAP Classes.");
+              break;
+            }
+          break;
         default:
           NS_ABORT_MSG("Not Implemented CoAP Classes.");
           break;

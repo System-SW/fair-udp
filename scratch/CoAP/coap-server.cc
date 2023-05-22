@@ -115,6 +115,7 @@ void CoAPServer::HandleRecv(Ptr<Socket> socket)
       CoAPHeader hdr;
       p->PeekHeader(hdr);
 
+      NS_LOG_INFO(this << static_cast<uint8_t>(hdr.GetClass()));
       switch (hdr.GetClass())
         {
           using Class = CoAPHeader::Class;
@@ -131,7 +132,6 @@ void CoAPServer::HandleRecv(Ptr<Socket> socket)
               break;
             }
           break;
-
         case Class::SIGNAL:
           using Signal = CoAPHeader::Signal;
           switch (hdr.GetCode<Class::SIGNAL>())
@@ -141,6 +141,7 @@ void CoAPServer::HandleRecv(Ptr<Socket> socket)
             default:
               break;
             }
+          break;
         default:
           NS_ABORT_MSG("Not Implemented CoAP Classes.");
           break;
