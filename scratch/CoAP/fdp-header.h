@@ -81,9 +81,9 @@ namespace ns3
 
     void OffResetBit();
 
-    int FlipSeqBit();
+    bool FlipSeqBit();
 
-    int GetSeqBit() const;
+    bool GetSeqBit() const;
 
     unsigned int IncMsgSeq();
 
