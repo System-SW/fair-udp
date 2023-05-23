@@ -71,6 +71,10 @@ namespace ns3
 
     enum class Signal : uint8_t
       {
+        /*
+         * FDP Feedback uses UNASSIGNED Signal.
+         * So, FDP Client handle UNASSIGNED Signal message as FDP feedback.
+         */
         UNASSIGNED = 0,
         CSM = 1,
         PING = 2,
@@ -123,14 +127,23 @@ namespace ns3
     void SetTKL(uint8_t tkl);
 
     // use only lower
+    // don't use directly
     void SetClass(CoAPHeader::Class cls);
 
     // use only lower
+    // don't use directly
     template <CoAPHeader::Class cls, typename CodeType = CoAPHeader::code_t<cls>>
     void SetCode(CodeType code)
     {
       auto code_val = static_cast<uint8_t>(code);
       m_fixed_hdr.slot[1] |= (0x1F & code_val);
+    }
+
+    template <CoAPHeader::Class cls>
+    void SetClassAndCode(code_t<cls> code)
+    {
+      SetClass(cls);
+      SetCode<cls>(code);
     }
 
     void SetMID(uint16_t mid);
@@ -166,9 +179,6 @@ namespace ns3
 
     static CoAPHeader MakePing(uint8_t tkl, uint64_t token);
     static CoAPHeader MakePong(CoAPHeader ping_hdr);
-
-    // template <CoAPHeader::Method M>
-    // static Ptr<Packet> MakeResponse(CoAPHeader request_hdr, CoAPHeader::ServerErr err);
   };
 
   template<>
