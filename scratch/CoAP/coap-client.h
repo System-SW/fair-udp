@@ -24,6 +24,7 @@
 #include "ns3/ptr.h"
 #include "ns3/ipv4-address.h"
 #include "coap-header.h"
+#include "fdp-cc.h"
 
 namespace ns3
 {
@@ -75,6 +76,9 @@ namespace ns3
 
     Ptr<Socket> m_socket{0};
     EventId m_sendEvent{EventId()};
+
+    // FDP Congestion Controller
+    FdpSenderCC m_CongestionController;
   };
 
 }    

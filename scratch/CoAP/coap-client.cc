@@ -183,6 +183,10 @@ void CoAPClient::HandleRecv(Ptr<Socket> socket)
             case Signal::PONG:
               MeasureRTTWithPingPong(hdr);
               break;
+            case Signal::UNASSIGNED:
+              NS_LOG_INFO("Handle FDP Feedback.");
+              m_CongestionController.HandleFeedback(p);
+              break;
             default:
               NS_ABORT_MSG("Not Implemented CoAP Classes.");
               break;
