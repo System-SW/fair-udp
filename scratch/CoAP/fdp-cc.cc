@@ -60,7 +60,7 @@ FdpSenderCC::TransferMessage(Ptr<Socket> socket, Ptr<Packet> packet,
                             [this, cb = std::forward<std::function<void()>>(callback)]
                             {
                               m_RTT = m_RTO;
-                              EndResetProcedure();
+                              FlipSeqBit();
                               cb();
                             });
       return m_ResetEvent;
@@ -101,11 +101,12 @@ FdpSenderCC::HandleFeedback(Ptr<Packet> packet)
           Time diff = Simulator::Now() - m_PrevTransfer;
           m_RTT = std::max(rtt_feed, diff);
         }
-      else // reset state
+      else if (hdr.GetResetBit()) // reset state
         {
           // do some job
+          m_ResetEvent.Cancel();
           HandleResetFeedback();
-          EndResetProcedure();
+          FlipSeqBit();
         }
     }
 }
@@ -120,24 +121,12 @@ Time FdpSenderCC::GetRTO() const
   return m_RTO;
 }
 
-void FdpSenderCC::StartResetProcedure()
-{
-  // XXX: implement this
-}
-
 void FdpSenderCC::HandleResetFeedback()
 {
   // XXX: implement this
-}
-
-void FdpSenderCC::EndResetProcedure()
-{
-  // XXX: implement this
-}
-
-void FdpSenderCC::UpdateRoundTripTime()
-{
-  // XXX: implement this
+  Time rtt_act = Simulator::Now() - m_PrevTransfer;
+  NS_ABORT_IF(rtt_act > m_RTO);
+  m_RTT = rtt_act;
 }
 
 bool FdpSenderCC::GetSeqBit() const

@@ -69,11 +69,7 @@ namespace ns3
     Time GetRTO() const;
 
   private:
-    void StartResetProcedure();
     void HandleResetFeedback();
-    void EndResetProcedure();
-    void UpdateRoundTripTime();
-
     bool GetSeqBit() const;
     void FlipSeqBit();
     void IncMsgSeq();

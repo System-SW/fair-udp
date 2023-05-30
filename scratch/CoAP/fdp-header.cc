@@ -218,6 +218,11 @@ void FDPFeedbackHeader::OffResetBit()
   m_reset_bit = false;
 }
 
+bool FDPFeedbackHeader::GetResetBit() const
+{
+  return m_reset_bit;
+}
+
 bool FDPFeedbackHeader::FlipSeqBit()
 {
   m_seq_bit = !m_seq_bit;
