@@ -52,8 +52,6 @@ FdpSenderCC::TransferMessage(Ptr<Socket> socket, Ptr<Packet> packet,
   if (GetMsgSeq() == 0)   // just sent third message, so move to reset procedure.
     {
       // do not flip sequence bit till finish reset procedure.
-      StartResetProcedure();
-
       // if fails to receive reset feedback, then go back to normal status.
       m_ResetEvent =
         Simulator::Schedule(m_RTO,
