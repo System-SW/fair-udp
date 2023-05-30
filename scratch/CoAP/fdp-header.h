@@ -24,6 +24,8 @@
 
 namespace ns3
 {
+  constexpr static inline uint16_t BIT_12_MAX = uint16_t((0x1 << 11) - 1);
+
   class Packet;
 
   class FDPMessageHeader : public Header
@@ -41,11 +43,11 @@ namespace ns3
 
     void Print(std::ostream& os) const override;
 
-    bool FlipSeqBit();
+    void SetSeqBit(bool seq_bit);
 
     bool GetSeqBit() const;
     
-    unsigned int IncMsgSeq();
+    void SetMsgSeq(unsigned int msg_seq);
 
     unsigned int GetMsgSeq() const;
 

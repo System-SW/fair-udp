@@ -20,12 +20,12 @@
 #define FDP_CC_H
 #include <functional>
 #include "ns3/nstime.h"
-#include "ns3/simulator.h"
-#include "ns3/packet.h"
-#include "ns3/socket.h"
 
 namespace ns3
 {
+  class Socket;
+  class Packet;
+
   class FdpReceiverCC
   {
     private:
@@ -40,9 +40,14 @@ namespace ns3
     bool m_seq_bit{false};
     uint8_t m_msg_seq{0};       // 0, 1, 2
 
-  public:
+    Time m_PrevTransfer{0};
+    EventId m_ResetEvent;
 
-    EventId TransferMessage(Ptr<Socket> socket, Ptr<Packet> packet, std::function<void()>&& callback);
+  public:
+    FdpSenderCC();
+
+    EventId TransferMessage(Ptr<Socket> socket, Ptr<Packet> packet,
+                            std::function<void()>&& callback);
     void HandleFeedback(Ptr<Packet> packet);
     /*
      * 구현에 대한 간단한 뇌피셜을 끄적여봄 "Tue May 23 21:42:43 2023"
@@ -66,8 +71,13 @@ namespace ns3
     void StartResetProcedure();
     void HandleResetFeedback();
     void EndResetProcedure();
-
     void UpdateRoundTripTime();
+
+    bool GetSeqBit() const;
+    void FlipSeqBit();
+    void IncMsgSeq();
+    uint8_t GetMsgSeq() const;
+
   };
 
 }

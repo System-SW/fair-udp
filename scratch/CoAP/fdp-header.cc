@@ -20,8 +20,6 @@
 
 using namespace ns3;
 
-constexpr static uint16_t BIT_12_MAX = uint16_t((0x1 << 11) - 1);
-
 
 TypeId FDPMessageHeader::GetTypeId()
 {
@@ -94,9 +92,9 @@ void FDPMessageHeader::Print(std::ostream& os) const
      << '\n';
 }
 
-bool FDPMessageHeader::FlipSeqBit()
+void FDPMessageHeader::SetSeqBit(bool seq_bit)
 {
-  return m_seq_bit = !m_seq_bit;
+  m_seq_bit = seq_bit;
 }
 
 bool FDPMessageHeader::GetSeqBit() const
@@ -104,14 +102,10 @@ bool FDPMessageHeader::GetSeqBit() const
   return m_seq_bit;
 }
 
-unsigned int FDPMessageHeader::IncMsgSeq()
+void FDPMessageHeader::SetMsgSeq(unsigned int msg_seq)
 {
-  m_msg_seq++;
-  if (m_msg_seq > 2)
-    {
-      m_msg_seq = 0;
-    }
-  return m_msg_seq;
+  NS_ABORT_IF(msg_seq < 3);
+  m_msg_seq = msg_seq;
 }
 
 unsigned int FDPMessageHeader::GetMsgSeq() const

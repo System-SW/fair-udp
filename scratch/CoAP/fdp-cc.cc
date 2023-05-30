@@ -15,6 +15,140 @@
  *
  * Author: Chang-Hui Kim <kch9001@gmail.com>
  */
-#include "ns3/nstime.h"
 #include "ns3/simulator.h"
+#include "ns3/packet.h"
+#include "ns3/socket.h"
+#include "fdp-cc.h"
+#include "fdp-header.h"
 
+using namespace ns3;
+
+NS_LOG_COMPONENT_DEFINE("FdpSenderCC");
+
+static uint16_t CastMilliSecondsToUint16(uint64_t milliseconds);
+
+FdpSenderCC::FdpSenderCC()
+{
+}
+
+EventId
+FdpSenderCC::TransferMessage(Ptr<Socket> socket, Ptr<Packet> packet,
+                             std::function<void()> &&callback)
+{
+  Time now = Simulator::Now();
+  auto diff = (now - m_PrevTransfer).GetMilliSeconds();
+  auto interval = CastMilliSecondsToUint16(diff);
+  m_PrevTransfer = now;
+
+  FDPMessageHeader hdr;
+  hdr.SetSeqBit(GetSeqBit());
+  hdr.SetMsgInterval(MilliSeconds(interval));
+  hdr.SetMsgSeq(GetMsgSeq());
+
+  packet->AddHeader(hdr);
+  socket->Send(packet);
+
+  IncMsgSeq();
+  if (GetMsgSeq() == 0)   // just sent third message, so move to reset procedure.
+    {
+      // do not flip sequence bit till finish reset procedure.
+      StartResetProcedure();
+
+      // if fails to receive reset feedback, then go back to normal status.
+      m_ResetEvent =
+        Simulator::Schedule(m_RTO,
+                            [this, cb = std::forward<std::function<void()>>(callback)]
+                            {
+                              m_RTT = m_RTO;
+                              EndResetProcedure();
+                              cb();
+                            });
+      return m_ResetEvent;
+    }
+  else
+    {
+      return Simulator::Schedule(m_RTT, std::forward<std::function<void()>>(callback));
+    }
+}
+
+
+/*
+ * Algorithm 정리
+ * 1. 우선 Feedback이 handling할 것인지 확인한다.
+ *    1) Sequence Bit가 자신의 값과 동일한가?
+ *    2) Message Sequence가 이미 처리한 값 보다 큰 값인가?
+ *
+ * 2. Client는 일반전송과 RESET 대기의 두가지 상태를 가진다.
+ *    1번 조건을 통과한 경우
+ *    1) 일반전송 상태
+ *       feedback에 기재된 latency 증분과 실제 RTT 간에 최대값으로 RTT와 RTO를 최신화
+ *    2) RESET 대기 상태
+ *       작성한 알고리즘 대로 동작
+ */
+void
+FdpSenderCC::HandleFeedback(Ptr<Packet> packet)
+{
+  FDPFeedbackHeader hdr;
+  packet->PeekHeader(hdr);
+
+}
+
+Time FdpSenderCC::GetRTT() const
+{
+  return m_RTT;
+}
+
+Time FdpSenderCC::GetRTO() const
+{
+  return m_RTO;
+}
+
+void FdpSenderCC::StartResetProcedure()
+{
+  // XXX: implement this
+}
+
+void FdpSenderCC::HandleResetFeedback()
+{
+  // XXX: implement this
+}
+
+void FdpSenderCC::EndResetProcedure()
+{
+  // XXX: implement this
+}
+
+void FdpSenderCC::UpdateRoundTripTime()
+{
+  // XXX: implement this
+}
+
+bool FdpSenderCC::GetSeqBit() const
+{
+  return m_seq_bit;
+}
+
+void FdpSenderCC::FlipSeqBit()
+{
+  m_seq_bit = !m_seq_bit;
+}
+
+void FdpSenderCC::IncMsgSeq()
+{
+  m_msg_seq++;
+  if (m_msg_seq > 2)
+    m_msg_seq = 0;
+}
+
+uint8_t FdpSenderCC::GetMsgSeq() const
+{
+  return m_msg_seq;
+}
+
+static uint16_t CastMilliSecondsToUint16(int64_t diff)
+{
+  NS_ABORT_IF(diff < 0);
+  diff = std::min(int64_t(BIT_12_MAX), diff);
+  uint16_t interval = static_cast<uint16_t>(diff);
+  return interval;
+}
