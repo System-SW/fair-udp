@@ -37,6 +37,7 @@ namespace ns3
   private:
     Time m_RTT{MilliSeconds(2000)};
     Time m_RTO{MilliSeconds(2000)};
+    Time m_RTTVAR{0};
     bool m_seq_bit{false};
     uint8_t m_msg_seq{0};       // 0, 1, 2
 
@@ -74,7 +75,8 @@ namespace ns3
     void FlipSeqBit();
     void IncMsgSeq();
     uint8_t GetMsgSeq() const;
-
+    void UpdateRTT(Time new_rtt);
+    void UpdateRTO(Time new_rtt);
   };
 
 }

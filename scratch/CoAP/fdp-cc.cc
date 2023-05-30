@@ -57,7 +57,7 @@ FdpSenderCC::TransferMessage(Ptr<Socket> socket, Ptr<Packet> packet,
         Simulator::Schedule(m_RTO,
                             [this, cb = std::forward<std::function<void()>>(callback)]
                             {
-                              m_RTT = m_RTO;
+                              m_RTT = m_RTO; // directly set RTO as RTT
                               FlipSeqBit();
                               cb();
                             });
@@ -65,7 +65,8 @@ FdpSenderCC::TransferMessage(Ptr<Socket> socket, Ptr<Packet> packet,
     }
   else
     {
-      return Simulator::Schedule(m_RTT, std::forward<std::function<void()>>(callback));
+      return Simulator::Schedule(GetRTT(),
+                                 std::forward<std::function<void()>>(callback));
     }
 }
 
@@ -97,7 +98,9 @@ FdpSenderCC::HandleFeedback(Ptr<Packet> packet)
         {
           Time rtt_feed = hdr.GetLatency();
           Time diff = Simulator::Now() - m_PrevTransfer;
-          m_RTT = std::max(rtt_feed, diff);
+          Time RTT_x = std::max(rtt_feed, diff);
+          UpdateRTT(RTT_x);
+          UpdateRTO(RTT_x);
         }
       else if (hdr.GetResetBit()) // reset state
         {
@@ -121,7 +124,6 @@ Time FdpSenderCC::GetRTO() const
 
 void FdpSenderCC::HandleResetFeedback()
 {
-  // XXX: implement this
   Time rtt_act = Simulator::Now() - m_PrevTransfer;
   NS_ABORT_IF(rtt_act > m_RTO);
   m_RTT = rtt_act;
@@ -147,6 +149,23 @@ void FdpSenderCC::IncMsgSeq()
 uint8_t FdpSenderCC::GetMsgSeq() const
 {
   return m_msg_seq;
+}
+
+void FdpSenderCC::UpdateRTT(Time new_rtt)
+{
+  // CoCoA like RTT update.
+  constexpr static double alpha = 0.25;
+  m_RTT = (1 - alpha) * GetRTT() + alpha * GetRTT();
+}
+
+void FdpSenderCC::UpdateRTO(Time new_rtt)
+{
+  // CoCoA like RTO update.
+  constexpr static double beta = 0.125;
+  m_RTTVAR = (1 - beta) * m_RTTVAR +
+    Seconds(beta * std::abs((GetRTT() - new_rtt).GetSeconds()));
+  Time RTO_x = GetRTT() + m_RTTVAR;
+  m_RTO = 0.25 * RTO_x + 0.75 * m_RTO;
 }
 
 static uint16_t CastMilliSecondsToUint16(int64_t diff)
