@@ -64,7 +64,9 @@ CoAPClient::Put ()
   // XXX: FDP congestion controller takes control of send message.
   // m_socket->Send(packet);
   // m_sendEvent = Simulator::Schedule(Seconds(0.1), &CoAPClient::Put, this);
-  m_sendEvent = m_CongestionController.TransferMessage(m_socket, packet, MakeCallback(&CoAPClient::Put, this));
+  m_sendEvent =
+    m_CongestionController.TransferMessage(m_socket, packet,
+                                           MakeCallback(&CoAPClient::Put, this));
 }
 
 template <>
