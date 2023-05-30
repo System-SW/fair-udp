@@ -42,6 +42,7 @@ namespace ns3
 
     Time m_PrevTransfer{0};
     EventId m_ResetEvent;
+    uint8_t m_recent_feedback_msg_seq{0};
 
   public:
     FdpSenderCC();

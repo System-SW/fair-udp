@@ -91,6 +91,23 @@ FdpSenderCC::HandleFeedback(Ptr<Packet> packet)
   FDPFeedbackHeader hdr;
   packet->PeekHeader(hdr);
 
+  if (GetSeqBit() == hdr.GetSeqBit() &&
+      m_recent_feedback_msg_seq < hdr.GetMsgSeq())
+    {
+      m_recent_feedback_msg_seq = hdr.GetMsgSeq(); // update msg seq
+      if (GetMsgSeq() != 0) // normal state
+        {
+          Time rtt_feed = hdr.GetLatency();
+          Time diff = Simulator::Now() - m_PrevTransfer;
+          m_RTT = std::max(rtt_feed, diff);
+        }
+      else // reset state
+        {
+          // do some job
+          HandleResetFeedback();
+          EndResetProcedure();
+        }
+    }
 }
 
 Time FdpSenderCC::GetRTT() const
