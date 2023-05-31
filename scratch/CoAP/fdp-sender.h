@@ -15,9 +15,10 @@
  *
  * Author: Chang-Hui Kim <kch9001@gmail.com>
  */
+
 #pragma once
-#ifndef FDP_CC_H
-#define FDP_CC_H
+#ifndef FDP_SENDER_H
+#define FDP_SENDER_H
 #include <functional>
 #include "ns3/nstime.h"
 
@@ -25,12 +26,6 @@ namespace ns3
 {
   class Socket;
   class Packet;
-
-  class FdpReceiverCC
-  {
-    private:
-    
-  };
 
   class FdpSenderCC
   {
@@ -78,7 +73,6 @@ namespace ns3
     void UpdateRTT(Time new_rtt);
     void UpdateRTO(Time new_rtt);
   };
+}    
 
-}
-
-#endif /* FDP_CC_H */
+#endif /* FDP_SENDER_H */

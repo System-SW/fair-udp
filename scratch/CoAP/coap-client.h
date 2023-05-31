@@ -24,7 +24,7 @@
 #include "ns3/ptr.h"
 #include "ns3/ipv4-address.h"
 #include "coap-header.h"
-#include "fdp-cc.h"
+#include "fdp-sender.h"
 
 namespace ns3
 {

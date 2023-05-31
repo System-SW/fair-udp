@@ -18,7 +18,7 @@
 #include "ns3/simulator.h"
 #include "ns3/packet.h"
 #include "ns3/socket.h"
-#include "fdp-cc.h"
+#include "fdp-sender.h"
 #include "fdp-header.h"
 
 using namespace ns3;
@@ -96,7 +96,7 @@ FdpSenderCC::HandleFeedback(Ptr<Packet> packet)
       m_recent_feedback_msg_seq = hdr.GetMsgSeq(); // update msg seq
       if (GetMsgSeq() != 0) // normal state
         {
-          Time rtt_feed = hdr.GetLatency();
+          Time rtt_feed = GetRTT() + 2 * hdr.GetLatency();
           Time diff = Simulator::Now() - m_PrevTransfer;
           Time RTT_x = std::max(rtt_feed, diff);
           UpdateRTT(RTT_x);
