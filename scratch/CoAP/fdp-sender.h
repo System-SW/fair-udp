@@ -21,6 +21,7 @@
 #define FDP_SENDER_H
 #include <functional>
 #include "ns3/nstime.h"
+#include "coap-header.h"
 
 namespace ns3
 {
@@ -43,8 +44,8 @@ namespace ns3
   public:
     FdpSenderCC();
 
-    EventId TransferMessage(Ptr<Socket> socket, Ptr<Packet> packet,
-                            std::function<void()>&& callback);
+    void TransferMessage(Ptr<Socket> socket, Ptr<Packet> packet, CoAPHeader &hdr);
+    EventId ScheduleTransfer(std::function<void()> &&callback);
     void HandleFeedback(Ptr<Packet> packet);
     /*
      * 구현에 대한 간단한 뇌피셜을 끄적여봄 "Tue May 23 21:42:43 2023"

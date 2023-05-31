@@ -30,9 +30,9 @@ FdpSenderCC::FdpSenderCC()
 {
 }
 
-EventId
+void
 FdpSenderCC::TransferMessage(Ptr<Socket> socket, Ptr<Packet> packet,
-                             std::function<void()> &&callback)
+                             CoAPHeader &coap_hdr)
 {
   Time now = Simulator::Now();
   auto diff = (now - m_PrevTransfer).GetMilliSeconds();
@@ -45,9 +45,15 @@ FdpSenderCC::TransferMessage(Ptr<Socket> socket, Ptr<Packet> packet,
   hdr.SetMsgSeq(GetMsgSeq());
 
   packet->AddHeader(hdr);
+  packet->AddHeader(coap_hdr);
   socket->Send(packet);
 
   IncMsgSeq();
+}
+
+EventId
+FdpSenderCC::ScheduleTransfer(std::function<void ()> &&callback)
+{
   if (GetMsgSeq() == 0)   // just sent third message, so move to reset procedure.
     {
       // do not flip sequence bit till finish reset procedure.
@@ -68,7 +74,6 @@ FdpSenderCC::TransferMessage(Ptr<Socket> socket, Ptr<Packet> packet,
                                  std::forward<std::function<void()>>(callback));
     }
 }
-
 
 /*
  * Algorithm 정리

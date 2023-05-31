@@ -59,14 +59,10 @@ CoAPClient::Put ()
   CoAPHeader hdr;
   CoAPHeader::PreparePut(hdr, 0, 0, m_mid++);
   Ptr<Packet> packet = Create<Packet>(m_size);
-  packet->AddHeader(hdr);
 
-  // XXX: FDP congestion controller takes control of send message.
-  // m_socket->Send(packet);
-  // m_sendEvent = Simulator::Schedule(Seconds(0.1), &CoAPClient::Put, this);
+  m_CongestionController.TransferMessage(m_socket, packet, hdr);
   m_sendEvent =
-    m_CongestionController.TransferMessage(m_socket, packet,
-                                           MakeCallback(&CoAPClient::Put, this));
+    m_CongestionController.ScheduleTransfer(MakeCallback(&CoAPClient::Put, this));
 }
 
 template <>

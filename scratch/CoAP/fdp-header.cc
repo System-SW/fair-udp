@@ -17,6 +17,7 @@
  */
 #include "ns3/packet.h"
 #include "fdp-header.h"
+#include "fdp-common.h"
 
 using namespace ns3;
 
@@ -104,7 +105,7 @@ bool FDPMessageHeader::GetSeqBit() const
 
 void FDPMessageHeader::SetMsgSeq(unsigned int msg_seq)
 {
-  NS_ABORT_IF(msg_seq < 3);
+  NS_ABORT_IF(msg_seq > 2);
   m_msg_seq = msg_seq;
 }
 
