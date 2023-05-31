@@ -185,6 +185,7 @@ void CoAPClient::HandleRecv(Ptr<Socket> socket)
               break;
             case Signal::UNASSIGNED:
               NS_LOG_INFO("Handle FDP Feedback.");
+              p->RemoveHeader(hdr); // remove CoAP header
               m_CongestionController.HandleFeedback(p);
               break;
             default:
