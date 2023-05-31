@@ -25,7 +25,7 @@ using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE("FdpSenderCC");
 
-static uint16_t CastMilliSecondsToUint16(uint64_t milliseconds);
+static uint16_t CastMilliSecondsToUint16(int64_t milliseconds);
 
 FdpSenderCC::FdpSenderCC()
 {
@@ -168,7 +168,7 @@ void FdpSenderCC::UpdateRTO(Time new_rtt)
   m_RTO = 0.25 * RTO_x + 0.75 * m_RTO;
 }
 
-static uint16_t CastMilliSecondsToUint16(int64_t diff)
+uint16_t CastMilliSecondsToUint16(int64_t diff)
 {
   NS_ABORT_IF(diff < 0);
   diff = std::min(int64_t(BIT_12_MAX), diff);
