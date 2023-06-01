@@ -168,3 +168,9 @@ CoAPServer::SendPacket(Ptr<Packet> packet, Address addr)
       NS_ABORT_MSG(this << "SendPacket Method requires InetSocketAddress.");
     }
 }
+
+FdpReceiverCC &
+CoAPServer::GetCongestionController (const Address &addr)
+{
+  return m_CC_infos[addr];
+}
