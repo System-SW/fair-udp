@@ -47,6 +47,17 @@ void CoAPServer::HandleMethod<CoAPHeader::Method::PUT>
                                         m_mid++,
                                         CoAPHeader::Success::CREATED);
       SendPacket(response, addr);
+
+      // FDP congestion control part
+      FDPMessageHeader fdp_hdr;
+      request->RemoveHeader(fdp_hdr);
+      auto feedback = GetCongestionController(addr).GenerateFeedback(fdp_hdr);
+      if (feedback != nullptr)
+        {
+          CoAPHeader coap_feedback_hdr = CoAPHeader::MakeUnassignedSignal(0, 0);
+          feedback->AddHeader(coap_feedback_hdr);
+          SendPacket(feedback, addr);
+        }
     }
   else // CON
     {
