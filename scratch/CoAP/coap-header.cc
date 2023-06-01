@@ -211,3 +211,15 @@ CoAPHeader::MakePong(CoAPHeader ping_hdr)
   hdr.SetToken(ping_hdr.GetToken());
   return hdr;
 }
+
+// for fdp feedback
+CoAPHeader
+CoAPHeader::MakeUnassignedSignal(uint8_t tkl, uint64_t token)
+{
+  CoAPHeader hdr;
+  hdr.SetType(Type::NON);
+  hdr.SetClassAndCode<Class::SIGNAL>(Signal::UNASSIGNED);
+  hdr.SetTKL(tkl);
+  hdr.SetToken(token);
+  return hdr;
+}

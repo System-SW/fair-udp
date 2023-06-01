@@ -15,10 +15,10 @@
  *
  * Author: Chang-Hui Kim <kch9001@gmail.com>
  */
-#include "ns3/header.h"
 #pragma once
 #ifndef COAP_HEADER_H
 #define COAP_HEADER_H
+#include "ns3/header.h"
 
 namespace ns3
 {
@@ -179,6 +179,7 @@ namespace ns3
 
     static CoAPHeader MakePing(uint8_t tkl, uint64_t token);
     static CoAPHeader MakePong(CoAPHeader ping_hdr);
+    static CoAPHeader MakeUnassignedSignal(uint8_t tkl, uint64_t token); // for fdp feedback
   };
 
   template<>
