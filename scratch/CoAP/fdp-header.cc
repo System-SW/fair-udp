@@ -224,10 +224,9 @@ bool FDPFeedbackHeader::GetResetBit() const
   return m_reset_bit;
 }
 
-bool FDPFeedbackHeader::FlipSeqBit()
+void FDPFeedbackHeader::SetSeqBit(bool seq_bit)
 {
-  m_seq_bit = !m_seq_bit;
-  return m_seq_bit;
+  m_seq_bit = seq_bit;
 }
 
 bool FDPFeedbackHeader::GetSeqBit() const

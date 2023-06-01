@@ -83,7 +83,7 @@ namespace ns3
 
     bool GetResetBit() const;
 
-    bool FlipSeqBit();
+    void SetSeqBit(bool seq_bit);
 
     bool GetSeqBit() const;
 
