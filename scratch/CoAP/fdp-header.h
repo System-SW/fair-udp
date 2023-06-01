@@ -87,7 +87,7 @@ namespace ns3
 
     bool GetSeqBit() const;
 
-    unsigned int IncMsgSeq();
+    void SetMsgSeq(unsigned int msg_seq);
 
     unsigned int GetMsgSeq() const;
 

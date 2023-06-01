@@ -234,14 +234,9 @@ bool FDPFeedbackHeader::GetSeqBit() const
   return m_seq_bit;
 }
 
-unsigned int FDPFeedbackHeader::IncMsgSeq()
+void FDPFeedbackHeader::SetMsgSeq(unsigned int msg_seq)
 {
-  m_msg_seq++;
-  if (m_msg_seq > 2)
-    {
-      m_msg_seq = 0;
-    }
-  return m_msg_seq;
+  m_msg_seq = msg_seq;
 }
 
 unsigned int FDPFeedbackHeader::GetMsgSeq() const
