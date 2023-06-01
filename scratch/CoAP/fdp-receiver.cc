@@ -25,7 +25,7 @@ using namespace ns3;
 NS_LOG_COMPONENT_DEFINE("FdpReceiverCC");
 
 Ptr<Packet>
-FdpReceiverCC::GenerateFeedback(FDPMessageHeader &hdr)
+FdpReceiverCC::GenerateFeedback(const FDPMessageHeader &hdr)
 {
   if (GetSeqBit() != hdr.GetSeqBit()) // different seq bit!
     {
@@ -37,39 +37,56 @@ FdpReceiverCC::GenerateFeedback(FDPMessageHeader &hdr)
       else
         {
           FlipSeqBit();         // final message may lossed
-          return CreateNormalFeedback();
+          return CreateNormalFeedback(hdr);
         }
     }
 
   if (hdr.GetMsgSeq() < 2)      // normal message handling
     {
-      return CreateNormalFeedback();
+      return CreateNormalFeedback(hdr);
     }
-  else                          // handle final message
+  else if (hdr.GetMsgSeq() == 2)  // handle final message
     {
       // just send the reset feedback!
       // the sender only measures the actual RTT with the reset feedback.
-      return CreateFinalFeedback();
+      auto reset_feedback = CreateFinalFeedback();
+      FlipSeqBit();
+      return reset_feedback;
     }
   return nullptr;               // no needs to response
 }
 
 Ptr<Packet>
-FdpReceiverCC::CreateNormalFeedback()
+FdpReceiverCC::CreateNormalFeedback(const FDPMessageHeader &hdr)
 {
-  // Time interval = hdr.GetMsgInterval();
-  // Time latency_diff = m_RTT / 2 - interval;
-  // if (latency_diff > MilliSeconds(10))
-  //   {
-  //     // feedback to the normal message
-  //     return feedback;
-  //   }
+  Time interval = hdr.GetMsgInterval();
+  Time latency_diff = m_RTT / 2 - interval;
+  if (latency_diff > MilliSeconds(10))
+    {
+      // feedback to the normal message
+      auto feedback = Create<Packet>();
+      FDPFeedbackHeader feedback_hdr;
+      feedback_hdr.OffResetBit();
+      feedback_hdr.SetSeqBit(GetSeqBit());
+      feedback_hdr.SetMsgSeq(GetMsgSeq());
+      feedback_hdr.SetLatency(latency_diff);
+      feedback->AddHeader(feedback_hdr);
+      return feedback;
+    }
+  return nullptr;               // no needs to response
 }
 
 Ptr<Packet>
 FdpReceiverCC::CreateFinalFeedback()
 {
-
+  // create the reset feedback packet and return it
+  Ptr<Packet> feedback = Create<Packet>();
+  FDPFeedbackHeader reset_hdr;
+  reset_hdr.OnResetBit();
+  reset_hdr.SetSeqBit(GetSeqBit());
+  reset_hdr.SetMsgSeq(GetMsgSeq());
+  feedback->AddHeader(reset_hdr);
+  return feedback;
 }
 
 bool

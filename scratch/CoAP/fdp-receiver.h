@@ -49,10 +49,10 @@ namespace ns3
     uint8_t m_msg_seq{0};
 
   public:
-    Ptr<Packet> GenerateFeedback(FDPMessageHeader &hdr);
+    Ptr<Packet> GenerateFeedback(const FDPMessageHeader &hdr);
 
   private:
-    Ptr<Packet> CreateNormalFeedback();
+    Ptr<Packet> CreateNormalFeedback(const FDPMessageHeader &hdr);
     Ptr<Packet> CreateFinalFeedback();
     bool GetSeqBit() const;
     void FlipSeqBit();
