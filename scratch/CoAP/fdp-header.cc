@@ -43,24 +43,14 @@ uint32_t FDPMessageHeader::GetSerializedSize() const
 
 void FDPMessageHeader::Serialize(Buffer::Iterator start) const
 {
-  union {
-    uint8_t bytes[2];
-    uint16_t combined;
-  } transform{0};
-
-
   // XXX: have to check interval is in 12 bits value (overflow check)
   auto interval = std::min(BIT_12_MAX, m_interval);
 
-  // combined endian to big endian
-  transform.combined = interval;
-  std::swap(transform.bytes[0], transform.bytes[1]);
-
   uint16_t field{0};
 
-  field ^= (static_cast<uint16_t>(m_seq_bit) << 15);
-  field ^= (uint16_t(m_msg_seq) << 12);
-  field ^= (transform.combined << 1);
+  field |= (static_cast<uint16_t>(m_seq_bit) << 15);
+  field |= (uint16_t(m_msg_seq) << 13);
+  field |= (interval << 1);
   start.WriteU16(field);
 }
 
@@ -68,17 +58,11 @@ uint32_t FDPMessageHeader::Deserialize(Buffer::Iterator start)
 {
   const uint16_t field = start.ReadU16();
   m_seq_bit = static_cast<bool>(field & (uint16_t(0x1) << 15));
-  m_msg_seq = static_cast<uint16_t>(field & (0x2 << 13)) >> 13;
+  m_msg_seq = static_cast<uint16_t>(field & (0x3 << 13)) >> 13;
 
-  union {
-    uint8_t bytes[2];
-    uint16_t combined;
-  } transform{0};
+  auto interval = (field & uint16_t(0xFFF << 1)) >> 1;
 
-  transform.combined = (field & (0xFFF << 1)) >> 1;
-  std::swap(transform.bytes[0], transform.bytes[1]);
-
-  m_interval = transform.combined;
+  m_interval = interval;
 
   return GetSerializedSize();
 }
@@ -88,7 +72,7 @@ void FDPMessageHeader::Print(std::ostream& os) const
   // XXX: implement this
   os << "FDPMessageHeader: "
      << " seq bit: " << m_seq_bit
-     << " msg seq: " << m_msg_seq
+     << " msg seq: " << uint32_t(m_msg_seq)
      << " msg interval (ms): " << m_interval
      << '\n';
 }
@@ -205,7 +189,7 @@ void FDPFeedbackHeader::Print(std::ostream& os) const
   os << "FDPFeedbackHeader: "
      << "RESET BIT: " << m_reset_bit
      << " SEQ BIT: " << m_seq_bit
-     << " MSG SEQ: " << m_msg_seq
+     << " MSG SEQ: " << uint32_t(m_msg_seq)
      << " Latency: " << m_latency << '\n';
 }
 

@@ -21,7 +21,7 @@
 #include <cstdint>
 #include "ns3/abort.h"
 
-constexpr static inline uint16_t BIT_12_MAX = uint16_t((0x1 << 11) - 1);
+constexpr static inline uint16_t BIT_12_MAX = uint16_t((0x1 << 13) - 1);
 
 inline uint16_t CastMilliSecondsToUint16(int64_t diff)
 {
