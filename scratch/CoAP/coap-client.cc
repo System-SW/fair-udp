@@ -187,6 +187,12 @@ void CoAPClient::HandleRecv(Ptr<Socket> socket)
               NS_LOG_INFO("Handle FDP Feedback.");
               p->RemoveHeader(hdr); // remove CoAP header
               m_CongestionController.HandleFeedback(p);
+              if (m_sendEvent.IsExpired())
+                {
+                  m_sendEvent =
+                    m_CongestionController.
+                    ScheduleTransfer(MakeCallback(&CoAPClient::Put, this));
+                }
               break;
             default:
               NS_ABORT_MSG("Not Implemented CoAP Classes.");

@@ -99,12 +99,11 @@ FdpSenderCC::HandleFeedback(Ptr<Packet> packet)
   FDPFeedbackHeader hdr;
   packet->PeekHeader(hdr);
 
-  if (GetSeqBit() == hdr.GetSeqBit() &&
-      m_recent_feedback_msg_seq < hdr.GetMsgSeq())
+  if (GetSeqBit() == hdr.GetSeqBit())
     {
       NS_LOG_INFO("entered");
       m_recent_feedback_msg_seq = hdr.GetMsgSeq(); // update msg seq
-      if (GetMsgSeq() != 0) // normal state
+      if (!hdr.GetResetBit()) // normal state
         {
           Time rtt_feed = GetRTT() + 2 * hdr.GetLatency();
           Time diff = Simulator::Now() - m_PrevTransfer;
@@ -112,11 +111,12 @@ FdpSenderCC::HandleFeedback(Ptr<Packet> packet)
           UpdateRTT(RTT_x);
           UpdateRTO(RTT_x);
         }
-      else if (hdr.GetResetBit()) // reset state
+      else // reset state
         {
           // do some job
           m_ResetEvent.Cancel();
           HandleResetFeedback();
+          // XXX: need to reschedule send event
           FlipSeqBit();
         }
     }
@@ -163,6 +163,7 @@ uint8_t FdpSenderCC::GetMsgSeq() const
 
 void FdpSenderCC::UpdateRTT(Time new_rtt)
 {
+  NS_LOG_FUNCTION(this);
   // CoCoA like RTT update.
   constexpr static double alpha = 0.25;
   m_RTT = (1 - alpha) * GetRTT() + alpha * GetRTT();
@@ -170,6 +171,7 @@ void FdpSenderCC::UpdateRTT(Time new_rtt)
 
 void FdpSenderCC::UpdateRTO(Time new_rtt)
 {
+  NS_LOG_FUNCTION(this);
   // CoCoA like RTO update.
   constexpr static double beta = 0.125;
   m_RTTVAR = (1 - beta) * m_RTTVAR +
