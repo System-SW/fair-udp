@@ -22,16 +22,21 @@
 #include "coap-client.h"
 #include "coap-server.h"
 #include "coap-helper.h"
+#include "coap-header.h"
+#include "fdp-header.h"
 
 using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE("CoAPExample");
 
-int main(int argc, char *argv[])
-{
-  CommandLine cmd{__FILE__};
-  cmd.Parse(argc, argv);
+enum TestNumber : int
+  {
+    CSMA = 1,
+    HEADER = 2,
+  };
 
+void csma_example()
+{
   NS_LOG_INFO("Create nodes.");
   NodeContainer n{2};
 
@@ -69,6 +74,60 @@ int main(int argc, char *argv[])
   Simulator::Stop(Seconds(3));
   Simulator::Run();
   Simulator::Destroy ();
+}
+
+void header_test()
+{
+  NS_LOG_FUNCTION("Header Test");
+
+  CoAPHeader coap_hdr;
+  FDPMessageHeader fdp_hdr;
+
+  CoAPHeader::PreparePut(coap_hdr, 4, 0X1234, 123);
+
+  fdp_hdr.SetMsgInterval(MilliSeconds(1234));
+  fdp_hdr.SetMsgSeq(1);
+  fdp_hdr.SetSeqBit(false);
+
+  NS_LOG_INFO(fdp_hdr);
+
+  Ptr<Packet> p = Create<Packet>();
+
+  p->AddHeader(fdp_hdr);
+  p->AddHeader(coap_hdr);
+
+  NS_LOG_INFO("Now check deserialized headers!");
+
+  CoAPHeader coap_de_hdr;
+  FDPMessageHeader fdp_de_hdr;
+
+  p->RemoveHeader(coap_de_hdr);
+  p->RemoveHeader(fdp_de_hdr);
+
+  NS_LOG_INFO(fdp_de_hdr);
+}
+
+int main(int argc, char *argv[])
+{
+  int which_one;
+  CommandLine cmd{__FILE__};
+  cmd.AddValue("WhichTest",
+               "1. csma test\n 2. header serialization test\n",
+               which_one);
+  cmd.Parse(argc, argv);
+
+  switch (which_one)
+    {
+    case TestNumber::CSMA:
+      csma_example();
+      break;
+    case TestNumber::HEADER:
+      header_test();
+      break;
+    default:
+      NS_LOG_ERROR("No such test number!" << cmd);
+      break;
+    }
   return 0;
 }
 
