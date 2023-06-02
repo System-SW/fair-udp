@@ -137,14 +137,8 @@ uint32_t FDPFeedbackHeader::GetSerializedSize() const
 
 void FDPFeedbackHeader::Serialize(Buffer::Iterator start) const
 {
-  union {
-    uint8_t bytes[2];
-    uint16_t combined;
-  } transform{0};
-
   // check latency is in 12 bits value (overflow check)
-  transform.combined = std::min(BIT_12_MAX, m_latency);
-  std::swap(transform.bytes[0], transform.bytes[1]);
+  auto latency = std::min(BIT_12_MAX, m_latency);
 
   uint16_t field{0};
 
@@ -152,7 +146,7 @@ void FDPFeedbackHeader::Serialize(Buffer::Iterator start) const
   field ^= static_cast<uint16_t>(m_seq_bit) << 14;
   NS_ABORT_IF(m_msg_seq > 2);
   field ^= static_cast<uint16_t>(m_msg_seq) << 12;
-  field ^= transform.combined;
+  field ^= latency;
 
   start.WriteU16(field);
 }
@@ -161,16 +155,10 @@ uint32_t FDPFeedbackHeader::Deserialize(Buffer::Iterator start)
 {
   uint16_t field = start.ReadU16();
 
-  union {
-    uint8_t bytes[2];
-    uint16_t combined;
-  } transform{0};
-
   // check latency is in 12 bits value (overflow check)
-  transform.combined = field & 0xFFF;
-  std::swap(transform.bytes[0], transform.bytes[1]);
+  uint16_t latency = field & 0xFFF;
 
-  m_latency = std::min(BIT_12_MAX, transform.combined);
+  m_latency = std::min(BIT_12_MAX, latency);
 
   constexpr static uint16_t RESET_MASK = 0x1 << 15;
   constexpr static uint16_t SEQ_BIT_MASK = 0x1 << 14;
