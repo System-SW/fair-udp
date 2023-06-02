@@ -31,8 +31,8 @@ namespace ns3
   class FdpSenderCC
   {
   private:
-    Time m_RTT{MilliSeconds(2000)};
-    Time m_RTO{MilliSeconds(2000)};
+    Time m_RTT{MilliSeconds(200)};
+    Time m_RTO{MilliSeconds(200)};
     Time m_RTTVAR{0};
     bool m_seq_bit{false};
     uint8_t m_msg_seq{0};       // 0, 1, 2

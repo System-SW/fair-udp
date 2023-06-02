@@ -27,6 +27,9 @@ NS_LOG_COMPONENT_DEFINE("FdpReceiverCC");
 Ptr<Packet>
 FdpReceiverCC::GenerateFeedback(const FDPMessageHeader &hdr)
 {
+  NS_LOG_FUNCTION(this);
+  NS_LOG_INFO(__FUNCTION__ << hdr);
+  // XXX: update PrevArrival, m_RTT, m_seq_bit, m_msg_seq... ect
   if (GetSeqBit() != hdr.GetSeqBit()) // different seq bit!
     {
       if (hdr.GetMsgSeq() == 2)  // delayed final message, ignore it
@@ -59,6 +62,9 @@ FdpReceiverCC::GenerateFeedback(const FDPMessageHeader &hdr)
 Ptr<Packet>
 FdpReceiverCC::CreateNormalFeedback(const FDPMessageHeader &hdr)
 {
+  // XXX: update m_RTT, m_seq_bit, m_msg_seq... ect
+  m_RTT = Simulator::Now() - m_PrevArrival;
+  m_PrevArrival = Simulator::Now();
   Time interval = hdr.GetMsgInterval();
   Time latency_diff = m_RTT / 2 - interval;
   if (latency_diff > MilliSeconds(10))
@@ -68,7 +74,7 @@ FdpReceiverCC::CreateNormalFeedback(const FDPMessageHeader &hdr)
       FDPFeedbackHeader feedback_hdr;
       feedback_hdr.OffResetBit();
       feedback_hdr.SetSeqBit(GetSeqBit());
-      feedback_hdr.SetMsgSeq(GetMsgSeq());
+      feedback_hdr.SetMsgSeq(hdr.GetMsgSeq());
       feedback_hdr.SetLatency(latency_diff);
       feedback->AddHeader(feedback_hdr);
       return feedback;
@@ -79,6 +85,8 @@ FdpReceiverCC::CreateNormalFeedback(const FDPMessageHeader &hdr)
 Ptr<Packet>
 FdpReceiverCC::CreateFinalFeedback()
 {
+  m_RTT = Simulator::Now() - m_PrevArrival;
+  m_PrevArrival = Simulator::Now();
   // create the reset feedback packet and return it
   Ptr<Packet> feedback = Create<Packet>();
   FDPFeedbackHeader reset_hdr;

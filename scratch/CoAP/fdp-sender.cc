@@ -34,6 +34,7 @@ void
 FdpSenderCC::TransferMessage(Ptr<Socket> socket, Ptr<Packet> packet,
                              CoAPHeader &coap_hdr)
 {
+  NS_LOG_FUNCTION(this);
   Time now = Simulator::Now();
   auto diff = (now - m_PrevTransfer).GetMilliSeconds();
   auto interval = CastMilliSecondsToUint16(diff);
@@ -43,6 +44,7 @@ FdpSenderCC::TransferMessage(Ptr<Socket> socket, Ptr<Packet> packet,
   hdr.SetSeqBit(GetSeqBit());
   hdr.SetMsgInterval(MilliSeconds(interval));
   hdr.SetMsgSeq(GetMsgSeq());
+  NS_LOG_INFO(__FUNCTION__ << hdr);
 
   packet->AddHeader(hdr);
   packet->AddHeader(coap_hdr);
@@ -54,6 +56,7 @@ FdpSenderCC::TransferMessage(Ptr<Socket> socket, Ptr<Packet> packet,
 EventId
 FdpSenderCC::ScheduleTransfer(std::function<void ()> &&callback)
 {
+  NS_LOG_FUNCTION(this << GetRTT());
   if (GetMsgSeq() == 0)   // just sent third message, so move to reset procedure.
     {
       // do not flip sequence bit till finish reset procedure.
@@ -66,6 +69,7 @@ FdpSenderCC::ScheduleTransfer(std::function<void ()> &&callback)
                               FlipSeqBit();
                               cb();
                             });
+      NS_LOG_INFO(m_RTO.GetMilliSeconds());
       return m_ResetEvent;
     }
   else
@@ -91,12 +95,14 @@ FdpSenderCC::ScheduleTransfer(std::function<void ()> &&callback)
 void
 FdpSenderCC::HandleFeedback(Ptr<Packet> packet)
 {
+  NS_LOG_FUNCTION(this);
   FDPFeedbackHeader hdr;
   packet->PeekHeader(hdr);
 
   if (GetSeqBit() == hdr.GetSeqBit() &&
       m_recent_feedback_msg_seq < hdr.GetMsgSeq())
     {
+      NS_LOG_INFO("entered");
       m_recent_feedback_msg_seq = hdr.GetMsgSeq(); // update msg seq
       if (GetMsgSeq() != 0) // normal state
         {

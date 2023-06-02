@@ -43,8 +43,8 @@ namespace ns3
   class FdpReceiverCC
   {
   private:
-    Time m_PrevArrival{-1};
-    Time m_RTT{-1};
+    Time m_PrevArrival{0};
+    Time m_RTT{2000};
     bool m_seq_bit{false};
     uint8_t m_msg_seq{0};
 
