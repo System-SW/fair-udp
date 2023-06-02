@@ -134,9 +134,11 @@ Time FdpSenderCC::GetRTO() const
 
 void FdpSenderCC::HandleResetFeedback()
 {
+  NS_LOG_FUNCTION(this);
   Time rtt_act = Simulator::Now() - m_PrevTransfer;
   NS_ABORT_IF(rtt_act > m_RTO);
   m_RTT = rtt_act;
+  UpdateRTO(rtt_act);
 }
 
 bool FdpSenderCC::GetSeqBit() const
