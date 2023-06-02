@@ -35,7 +35,7 @@ enum TestNumber : int
     HEADER = 2,
   };
 
-void csma_example()
+void CsmaExample()
 {
   NS_LOG_INFO("Create nodes.");
   NodeContainer n{2};
@@ -61,50 +61,92 @@ void csma_example()
   CoAPClientHelper coap_client{serverAddress};
   ApplicationContainer client_app = coap_client.Install(n.Get(0));
   client_app.Start(Seconds(1.0));
-  client_app.Stop(Seconds(2.0));
+  client_app.Stop(Seconds(30.0));
 
   CoAPServerHelper coap_server;
   ApplicationContainer server_app = coap_server.Install(n.Get(1));
   server_app.Start(Seconds(0));
-  server_app.Stop(Seconds(2.0));
+  server_app.Stop(Seconds(30.0));
 
   csma.EnablePcapAll("coap", true);
 
   NS_LOG_INFO ("Run Simulation.");
-  Simulator::Stop(Seconds(3));
+  Simulator::Stop(Seconds(30));
   Simulator::Run();
   Simulator::Destroy ();
 }
 
-void header_test()
+void HeaderTest()
 {
   NS_LOG_FUNCTION("Header Test");
 
-  CoAPHeader coap_hdr;
-  FDPMessageHeader fdp_hdr;
+  {
+    CoAPHeader coap_hdr;
+    FDPMessageHeader fdp_hdr;
 
-  CoAPHeader::PreparePut(coap_hdr, 4, 0X1234, 123);
+    CoAPHeader::PreparePut(coap_hdr, 4, 0X1234, 123);
 
-  fdp_hdr.SetMsgInterval(MilliSeconds(1234));
-  fdp_hdr.SetMsgSeq(1);
-  fdp_hdr.SetSeqBit(false);
+    fdp_hdr.SetMsgInterval(MilliSeconds(1234));
+    fdp_hdr.SetMsgSeq(1);
+    fdp_hdr.SetSeqBit(false);
 
-  NS_LOG_INFO(fdp_hdr);
+    NS_LOG_INFO(fdp_hdr);
 
-  Ptr<Packet> p = Create<Packet>();
+    Ptr<Packet> p = Create<Packet>();
 
-  p->AddHeader(fdp_hdr);
-  p->AddHeader(coap_hdr);
+    p->AddHeader(fdp_hdr);
+    p->AddHeader(coap_hdr);
 
-  NS_LOG_INFO("Now check deserialized headers!");
+    NS_LOG_INFO("Now check deserialized headers!");
 
-  CoAPHeader coap_de_hdr;
-  FDPMessageHeader fdp_de_hdr;
+    CoAPHeader coap_de_hdr;
+    FDPMessageHeader fdp_de_hdr;
 
-  p->RemoveHeader(coap_de_hdr);
-  p->RemoveHeader(fdp_de_hdr);
+    p->RemoveHeader(coap_de_hdr);
+    p->RemoveHeader(fdp_de_hdr);
 
-  NS_LOG_INFO(fdp_de_hdr);
+    NS_LOG_INFO(fdp_de_hdr);
+  }
+
+  NS_LOG_INFO("========== Feedback header test===========");
+
+  {
+    CoAPHeader coap_hdr;
+    FDPFeedbackHeader fdp_hdr;
+
+    CoAPHeader::PreparePut(coap_hdr, 4, 0X1234, 123);
+
+    fdp_hdr.SetLatency(MilliSeconds(1234));
+    fdp_hdr.SetMsgSeq(1);
+    fdp_hdr.SetSeqBit(false);
+
+    NS_LOG_INFO(fdp_hdr);
+
+    Ptr<Packet> p = Create<Packet>();
+
+    p->AddHeader(fdp_hdr);
+    p->AddHeader(coap_hdr);
+
+    NS_LOG_INFO("Now check deserialized headers!");
+
+    CoAPHeader coap_de_hdr;
+    FDPFeedbackHeader fdp_de_hdr;
+
+    p->RemoveHeader(coap_de_hdr);
+    p->RemoveHeader(fdp_de_hdr);
+
+    NS_LOG_INFO(fdp_de_hdr);
+  }
+}
+
+struct WifiTestArgs
+{
+  
+};
+
+void WifiTest(const WifiTestArgs& args)
+{
+
 }
 
 int main(int argc, char *argv[])
@@ -119,10 +161,10 @@ int main(int argc, char *argv[])
   switch (which_one)
     {
     case TestNumber::CSMA:
-      csma_example();
+      CsmaExample();
       break;
     case TestNumber::HEADER:
-      header_test();
+      HeaderTest();
       break;
     default:
       NS_LOG_ERROR("No such test number!" << cmd);
