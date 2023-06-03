@@ -62,7 +62,7 @@ namespace ns3
      * 미리 다음 이벤트 핸들러를 예약해 놓는 방식 생각
      */
 
-    Time GetRTT() const;
+    Time GetRTT();
     Time GetRTO() const;
 
   private:

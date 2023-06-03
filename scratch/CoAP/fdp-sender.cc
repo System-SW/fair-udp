@@ -69,7 +69,6 @@ FdpSenderCC::ScheduleTransfer(std::function<void ()> &&callback)
                               FlipSeqBit();
                               cb();
                             });
-      NS_LOG_INFO(m_RTO.GetMilliSeconds());
       return m_ResetEvent;
     }
   else
@@ -98,10 +97,9 @@ FdpSenderCC::HandleFeedback(Ptr<Packet> packet)
   NS_LOG_FUNCTION(this);
   FDPFeedbackHeader hdr;
   packet->PeekHeader(hdr);
-
-  if (GetSeqBit() == hdr.GetSeqBit())
+  // GetSeqBit() == hdr.GetSeqBit()
+  if (true)
     {
-      NS_LOG_INFO("entered");
       m_recent_feedback_msg_seq = hdr.GetMsgSeq(); // update msg seq
       if (!hdr.GetResetBit()) // normal state
         {
@@ -111,7 +109,7 @@ FdpSenderCC::HandleFeedback(Ptr<Packet> packet)
           UpdateRTT(RTT_x);
           UpdateRTO(RTT_x);
         }
-      else // reset state
+      else if (!m_ResetEvent.IsExpired())// reset state
         {
           // do some job
           m_ResetEvent.Cancel();
@@ -122,8 +120,12 @@ FdpSenderCC::HandleFeedback(Ptr<Packet> packet)
     }
 }
 
-Time FdpSenderCC::GetRTT() const
+Time FdpSenderCC::GetRTT()
 {
+  if (m_RTT <= MilliSeconds(10))
+    {
+      m_RTT = MilliSeconds(10);
+    }
   return m_RTT;
 }
 
@@ -136,7 +138,7 @@ void FdpSenderCC::HandleResetFeedback()
 {
   NS_LOG_FUNCTION(this);
   Time rtt_act = Simulator::Now() - m_PrevTransfer;
-  NS_ABORT_IF(rtt_act > m_RTO);
+  // NS_ABORT_IF(rtt_act > m_RTO);
   m_RTT = rtt_act;
   UpdateRTO(rtt_act);
 }

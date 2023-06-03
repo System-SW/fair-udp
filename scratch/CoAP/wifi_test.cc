@@ -46,7 +46,7 @@ struct WifiTestArgs
 };
 
 static auto SERVER_BANDWIDTH = "1000Mbps"s;
-static std::size_t NUM_UAVS = 30;
+static std::size_t NUM_UAVS = 40;
 
 static NetDeviceContainer
 InstallP2P(NodeContainer& Nodes)
@@ -119,6 +119,7 @@ InstallInternetStack(NodeContainer& nodes)
 InstallCoAPServer(Ptr<Node> server, Time start = Seconds(0), Time end = Seconds(30))
 {
   CoAPServerHelper installer;
+  installer.SetAttribute("RemotePort", UintegerValue(19574));
   auto server_app = installer.Install(server);
   server_app.Start(start);
   server_app.Stop(end);
