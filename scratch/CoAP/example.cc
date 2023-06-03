@@ -24,6 +24,7 @@
 #include "coap-helper.h"
 #include "coap-header.h"
 #include "fdp-header.h"
+#include "tests.h"
 
 using namespace ns3;
 
@@ -33,6 +34,7 @@ enum TestNumber : int
   {
     CSMA = 1,
     HEADER = 2,
+    WIFI = 3,
   };
 
 void CsmaExample()
@@ -139,16 +141,6 @@ void HeaderTest()
   }
 }
 
-struct WifiTestArgs
-{
-  
-};
-
-void WifiTest(const WifiTestArgs& args)
-{
-
-}
-
 int main(int argc, char *argv[])
 {
   int which_one;
@@ -165,6 +157,9 @@ int main(int argc, char *argv[])
       break;
     case TestNumber::HEADER:
       HeaderTest();
+      break;
+    case TestNumber::WIFI:
+      WifiTest();
       break;
     default:
       NS_LOG_ERROR("No such test number!" << cmd);
