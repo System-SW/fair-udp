@@ -111,7 +111,7 @@ void FDPMessageHeader::SetMsgInterval(uint16_t interval_ms)
 void FDPMessageHeader::SetMsgInterval(Time interval_ms)
 {
   auto interval = interval_ms.GetMilliSeconds();
-  NS_ABORT_IF(interval > BIT_12_MAX);
+  interval = std::min(interval, int64_t(BIT_12_MAX));
   m_interval = interval;
 }
 
@@ -229,6 +229,6 @@ void FDPFeedbackHeader::SetLatency(uint16_t interval_ms)
 void FDPFeedbackHeader::SetLatency(Time interval_ms)
 {
   auto latency = interval_ms.GetMilliSeconds();
-  NS_ABORT_IF(latency > BIT_12_MAX);
+  latency = std::min(latency, int64_t(BIT_12_MAX));
   m_latency = static_cast<uint16_t>(latency);
 }

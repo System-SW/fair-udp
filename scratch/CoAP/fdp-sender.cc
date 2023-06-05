@@ -97,8 +97,8 @@ FdpSenderCC::HandleFeedback(Ptr<Packet> packet)
   NS_LOG_FUNCTION(this);
   FDPFeedbackHeader hdr;
   packet->PeekHeader(hdr);
-  // GetSeqBit() == hdr.GetSeqBit()
-  if (true)
+
+  if (GetSeqBit() == hdr.GetSeqBit())
     {
       m_recent_feedback_msg_seq = hdr.GetMsgSeq(); // update msg seq
       if (!hdr.GetResetBit()) // normal state
@@ -109,10 +109,13 @@ FdpSenderCC::HandleFeedback(Ptr<Packet> packet)
           UpdateRTT(RTT_x);
           UpdateRTO(RTT_x);
         }
-      else if (!m_ResetEvent.IsExpired())// reset state
+      else // reset state
         {
           // do some job
-          m_ResetEvent.Cancel();
+          if (!m_ResetEvent.IsExpired())
+            {
+              m_ResetEvent.Cancel();
+            }
           HandleResetFeedback();
           // XXX: need to reschedule send event
           FlipSeqBit();
@@ -170,7 +173,7 @@ void FdpSenderCC::UpdateRTT(Time new_rtt)
   NS_LOG_FUNCTION(this);
   // CoCoA like RTT update.
   constexpr static double alpha = 0.25;
-  m_RTT = (1 - alpha) * GetRTT() + alpha * GetRTT();
+  m_RTT = (1 - alpha) * new_rtt + alpha * new_rtt;
 }
 
 void FdpSenderCC::UpdateRTO(Time new_rtt)
