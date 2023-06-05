@@ -47,6 +47,7 @@ struct WifiTestArgs
 
 static auto SERVER_BANDWIDTH = "1000Mbps"s;
 static std::size_t NUM_UAVS = 40;
+static Time SIMUL_TIME = Seconds(120);
 
 static NetDeviceContainer
 InstallP2P(NodeContainer& Nodes)
@@ -116,7 +117,7 @@ InstallInternetStack(NodeContainer& nodes)
 }
 
 [[nodiscard]] static ApplicationContainer
-InstallCoAPServer(Ptr<Node> server, Time start = Seconds(0), Time end = Seconds(30))
+InstallCoAPServer(Ptr<Node> server, Time start = Seconds(0), Time end = SIMUL_TIME)
 {
   CoAPServerHelper installer;
   installer.SetAttribute("RemotePort", UintegerValue(19574));
@@ -128,7 +129,7 @@ InstallCoAPServer(Ptr<Node> server, Time start = Seconds(0), Time end = Seconds(
 
 [[nodiscard]] static ApplicationContainer
 InstallCoAPClient(NodeContainer &clients, Address dest, Time start = Seconds(0.1),
-                  Time end = Seconds(30))
+                  Time end = SIMUL_TIME)
 {
   CoAPClientHelper installer{dest};
   auto client_app = installer.Install(clients);
@@ -139,7 +140,7 @@ InstallCoAPClient(NodeContainer &clients, Address dest, Time start = Seconds(0.1
 
 [[nodiscard]] static ApplicationContainer
 InstallTcpSink(Ptr<Node> server, Address serverAddr, Time start = Seconds(0),
-               Time end = Seconds(30))
+               Time end = SIMUL_TIME)
 {
   PacketSinkHelper helper{"ns3::TcpSocketFactory", serverAddr};
   auto app = helper.Install(server);
@@ -150,7 +151,7 @@ InstallTcpSink(Ptr<Node> server, Address serverAddr, Time start = Seconds(0),
 
 [[nodiscard]] static ApplicationContainer
 InstallTcpOnOff(NodeContainer &nodes, Address dest, Time start = Seconds(1),
-                Time end = Seconds(30))    
+                Time end = SIMUL_TIME)    
 {
   OnOffHelper helper{"ns3::TcpSocketFactory", dest};
   helper.SetAttribute("Remote", AddressValue(dest));
@@ -200,7 +201,7 @@ void WifiTest()
 
   Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 
-  Simulator::Stop(Seconds(30));
+  Simulator::Stop(SIMUL_TIME);
   Simulator::Run();
   Simulator::Destroy();
 }
