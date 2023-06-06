@@ -199,6 +199,28 @@ CoAPHeader::MakeResponse<CoAPHeader::Method::PUT, false>(CoAPHeader request_hdr,
   return response;
 }
 
+template <>
+Ptr<Packet>
+CoAPHeader::MakeResponse<CoAPHeader::Method::PUT, true>(CoAPHeader request_hdr,
+                                                         uint16_t mid,
+                                                         CoAPHeader::Success code)
+{
+  Ptr<Packet> response = Create<Packet>();
+  CoAPHeader hdr;
+  auto tkl = request_hdr.GetTKL();
+  auto token = request_hdr.GetToken();
+
+  hdr.SetTKL(tkl);
+  hdr.SetMID(mid);
+  hdr.SetType(CoAPHeader::Type::CON);
+  hdr.SetClass(CoAPHeader::Class::SUCCESS);
+  hdr.SetCode<CoAPHeader::Class::SUCCESS>(code);
+  hdr.SetToken(token);
+
+  response->AddHeader(hdr);
+  return response;
+}
+
 CoAPHeader
 CoAPHeader::MakePing(uint8_t tkl, uint64_t token)
 {

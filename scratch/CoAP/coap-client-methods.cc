@@ -37,7 +37,7 @@ CoAPClient::Put ()
   NS_ASSERT (m_sendEvent.IsExpired());
 
   CoAPHeader hdr;
-  CoAPHeader::PreparePut(hdr, 0, 0, m_mid++);
+  CoAPHeader::PreparePut(hdr, 0, 0, m_mid++, true); // now send CON
   Ptr<Packet> packet = Create<Packet>(m_size);
   packet->AddHeader(hdr);
 
@@ -59,7 +59,7 @@ void CoAPClient::HandleResponse<CoAPHeader::Success::CREATED>
     }
   else  // CON
     {
-
+      NS_LOG_INFO("Piggyback ACK! " << hdr);
     }
 }
 

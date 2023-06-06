@@ -50,7 +50,13 @@ void CoAPServer::HandleMethod<CoAPHeader::Method::PUT>
     }
   else // CON
     {
-
+      NS_LOG_INFO("Receive PUT (CON)");
+      auto response =
+        CoAPHeader::MakeResponse<CoAPHeader::Method::PUT,
+                                 true>(request_hdr,
+                                       m_mid++,
+                                       CoAPHeader::Success::CREATED);
+      SendPacket(response, addr);
     }
 }
 
