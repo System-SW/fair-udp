@@ -121,13 +121,6 @@ void CoAPHeader::SetClass(CoAPHeader::Class cls)
   m_fixed_hdr.slot[1] |= ((0x7 & cls_val) << 5);
 }
 
-template <>
-void CoAPHeader::SetCode<CoAPHeader::Class::SUCCESS>(CoAPHeader::Success code)
-{
-  auto success = static_cast<uint8_t>(code);
-  m_fixed_hdr.slot[1] |= (0x1F & success);
-}
-
 uint16_t CoAPHeader::GetMID() const
 {
   return (m_fixed_hdr.slot[2] << 8) | m_fixed_hdr.slot[3];
@@ -172,8 +165,7 @@ CoAPHeader::PreparePut(CoAPHeader &hdr, uint8_t tkl, uint64_t token, uint16_t mi
 
   hdr.SetTKL(tkl);
   hdr.SetMID(mid);
-  hdr.SetClass(Class::METHOD);
-  hdr.SetCode<Class::METHOD>(Method::PUT);
+  hdr.SetClassAndCode<Class::METHOD>(Method::PUT);
   hdr.SetToken(token);
 }
 
@@ -191,8 +183,7 @@ CoAPHeader::MakeResponse<CoAPHeader::Method::PUT, false>(CoAPHeader request_hdr,
   hdr.SetTKL(tkl);
   hdr.SetMID(mid);
   hdr.SetType(CoAPHeader::Type::NON);
-  hdr.SetClass(CoAPHeader::Class::SUCCESS);
-  hdr.SetCode<CoAPHeader::Class::SUCCESS>(code);
+  hdr.SetClassAndCode<Class::SUCCESS>(code);
   hdr.SetToken(token);
 
   response->AddHeader(hdr);
@@ -226,8 +217,7 @@ CoAPHeader::MakePing(uint8_t tkl, uint64_t token)
 {
   CoAPHeader hdr;
   hdr.SetType(Type::NON);
-  hdr.SetClass(CoAPHeader::Class::SIGNAL);
-  hdr.SetCode<CoAPHeader::Class::SIGNAL>(CoAPHeader::Signal::PING);
+  hdr.SetClassAndCode<Class::SIGNAL>(Signal::PING);
   hdr.SetTKL(tkl);
   hdr.SetToken(token);
   return hdr;
@@ -238,8 +228,7 @@ CoAPHeader::MakePong(CoAPHeader ping_hdr)
 {
   CoAPHeader hdr;
   hdr.SetType(Type::NON);
-  hdr.SetClass(CoAPHeader::Class::SIGNAL);
-  hdr.SetCode<CoAPHeader::Class::SIGNAL>(CoAPHeader::Signal::PONG);
+  hdr.SetClassAndCode<Class::SIGNAL>(Signal::PONG);
   hdr.SetTKL(ping_hdr.GetTKL());
   hdr.SetToken(ping_hdr.GetToken());
   return hdr;
