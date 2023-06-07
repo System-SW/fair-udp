@@ -117,14 +117,6 @@ namespace ns3
     // and below is payload
 
   private:
-    // use only lower 2bits
-    void SetVersion(uint8_t version);
-
-    // use only lower 2bits
-    void SetType(CoAPHeader::Type type);
-
-    // use only lower 4bits
-    void SetTKL(uint8_t tkl);
 
     // use only lower
     // don't use directly
@@ -139,6 +131,16 @@ namespace ns3
       m_fixed_hdr.slot[1] |= (0x1F & code_val);
     }
 
+  public:
+    // use only lower 2bits
+    void SetVersion(uint8_t version);
+
+    // use only lower 2bits
+    void SetType(CoAPHeader::Type type);
+
+    // use only lower 4bits
+    void SetTKL(uint8_t tkl);
+
     template <CoAPHeader::Class cls>
     void SetClassAndCode(code_t<cls> code)
     {
@@ -150,7 +152,6 @@ namespace ns3
 
     void SetToken(uint64_t token);
 
-  public:
     uint8_t GetVersion() const;
 
     CoAPHeader::Type GetType() const;
