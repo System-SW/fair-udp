@@ -94,6 +94,7 @@ CoCoA::TerminalTransmit()
       // stop retransmit
       // may reschedule NON transfer event.
       ClearConStates();
+      m_Context();
       return;
     }
 
@@ -111,7 +112,6 @@ CoCoA::ClearConStates()
   m_ConStart = Seconds(0);
   m_RC = 0;
   SetConPacket(nullptr);  // free packet
-  m_Context();            // go back to context
 }
 
 void
@@ -189,4 +189,5 @@ CoCoA::NotifyACK(Ptr<Packet> ack)
     default:                      // ignore
       break;
     }
+  m_Context();            // go back to context
 }
