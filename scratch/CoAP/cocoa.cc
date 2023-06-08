@@ -171,24 +171,22 @@ CoCoA::NotifyACK(Ptr<Packet> ack)
   if (m_ConStart == Seconds(0)) // its on NON procedure
     return;                     // ignore
 
+  ClearConStates();
   switch (GetRC())
     {
     case 0:                       // normal
       {
-        ClearConStates();
         auto newRTT = Simulator::Now() - m_ConStart;
         m_Estimator.UpdatePeriods<EstimatorType::STRONG>(newRTT);
         break;
       }
     case 1:                       // retransmission
       {
-        ClearConStates();
         auto newRTT = Simulator::Now() - m_ConStart;
         m_Estimator.UpdatePeriods<EstimatorType::WEAK>(newRTT);
         break;
       }
     default:                      // ignore
-      ClearConStates();
       break;
     }
 }
