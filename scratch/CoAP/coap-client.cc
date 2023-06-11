@@ -140,7 +140,6 @@ CoAPClient::StartApplication ()
 
   m_socket->SetRecvCallback(MakeCallback(&CoAPClient::HandleRecv, this));
   m_sendEvent = Simulator::Schedule(Seconds(0.1), &CoAPClient::Put, this);
-  // Simulator::Schedule(Seconds(0.1), &CoAPClient::SendPing, this, 0x1234);
 }
 
 void
@@ -194,4 +193,10 @@ void CoAPClient::HandleRecv(Ptr<Socket> socket)
         }
     }
 
+}
+
+void
+CoAPClient::SendPacket(Ptr<Packet> packet) const
+{
+  m_socket->Send(packet);
 }

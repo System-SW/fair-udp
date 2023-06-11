@@ -24,6 +24,8 @@
 #include "ns3/ptr.h"
 #include "ns3/ipv4-address.h"
 #include "coap-header.h"
+#include "cocoa.h"
+
 
 namespace ns3
 {
@@ -63,6 +65,8 @@ namespace ns3
 
     Time MeasureRTTWithPingPong(CoAPHeader pong_hdr);
 
+    void SendPacket(Ptr<Packet> packet) const;
+
     uint32_t m_size{0}; // packet payload size in bytes (for PUT)
     uint16_t m_mid{0};  // message id
 
@@ -75,6 +79,9 @@ namespace ns3
 
     Ptr<Socket> m_socket{0};
     EventId m_sendEvent{EventId()};
+
+    // CoCoA Congestion Controller
+    CoCoA m_CongestionController{MakeCallback(&CoAPClient::SendPacket, this)};
   };
 
 }    

@@ -37,12 +37,11 @@ CoAPClient::Put ()
   NS_ASSERT (m_sendEvent.IsExpired());
 
   CoAPHeader hdr;
-  CoAPHeader::PreparePut(hdr, 0, 0, m_mid++, true); // now send CON
+  CoAPHeader::PreparePut(hdr, 0, 0, m_mid++, false); // default is NON
   Ptr<Packet> packet = Create<Packet>(m_size);
   packet->AddHeader(hdr);
 
-  m_socket->Send(packet);
-  m_sendEvent = Simulator::Schedule(Seconds(0.1), &CoAPClient::Put, this);
+  m_CongestionController.TransferMsg(packet, MakeCallback(&CoAPClient::Put, this));
 }
 
 template <>
@@ -60,6 +59,7 @@ void CoAPClient::HandleResponse<CoAPHeader::Success::CREATED>
   else  // CON
     {
       NS_LOG_INFO("Piggyback ACK! " << hdr);
+      m_CongestionController.NotifyACK(response);
     }
 }
 
