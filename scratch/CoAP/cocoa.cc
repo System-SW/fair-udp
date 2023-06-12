@@ -22,7 +22,7 @@
 
 using namespace ns3;
 
-NS_LOG_COMPONENT_DEFINE("ns3::CoCoA");
+NS_LOG_COMPONENT_DEFINE("CoCoA");
 
 
 CoCoA::CoCoA(std::function<void(Ptr<Packet>)> &&SendPacketFunction)
@@ -46,6 +46,8 @@ CoCoA::TransferNON(Ptr<Packet> packet)
   m_SendPacketFunction(packet);
 
   IncTC();
+
+  m_Context();      // go back to context
 }
 
 void

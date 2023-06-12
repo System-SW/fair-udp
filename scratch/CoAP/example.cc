@@ -56,17 +56,17 @@ int main(int argc, char *argv[])
   CoAPClientHelper coap_client{serverAddress};
   ApplicationContainer client_app = coap_client.Install(n.Get(0));
   client_app.Start(Seconds(1.0));
-  client_app.Stop(Seconds(2.0));
+  client_app.Stop(Seconds(120.0));
 
   CoAPServerHelper coap_server;
   ApplicationContainer server_app = coap_server.Install(n.Get(1));
   server_app.Start(Seconds(0));
-  server_app.Stop(Seconds(2.0));
+  server_app.Stop(Seconds(120.0));
 
   csma.EnablePcapAll("coap", true);
 
   NS_LOG_INFO ("Run Simulation.");
-  Simulator::Stop(Seconds(3));
+  Simulator::Stop(Seconds(120));
   Simulator::Run();
   Simulator::Destroy ();
   return 0;
