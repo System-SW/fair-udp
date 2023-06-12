@@ -173,8 +173,9 @@ CoCoA::NotifyACK(Ptr<Packet> ack)
   if (m_ConStart == Seconds(0)) // its on NON procedure
     return;                     // ignore
 
+  auto rc = GetRC();
   ClearConStates();
-  switch (GetRC())
+  switch (rc)
     {
     case 0:                       // normal
       {
