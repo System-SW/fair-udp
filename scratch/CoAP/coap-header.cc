@@ -95,6 +95,7 @@ CoAPHeader::Type CoAPHeader::GetType() const
 void CoAPHeader::SetType(CoAPHeader::Type type)
 {
   auto type_val = static_cast<uint8_t>(type);
+  m_fixed_hdr.slot[0] ^= m_fixed_hdr.slot[0];
   m_fixed_hdr.slot[0] |= ((0x3 & type_val) << 4);
 }
 
