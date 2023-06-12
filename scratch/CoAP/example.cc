@@ -22,16 +22,21 @@
 #include "coap-client.h"
 #include "coap-server.h"
 #include "coap-helper.h"
+#include "coap-header.h"
+#include "tests.h"
 
 using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE("CoAPExample");
 
-int main(int argc, char *argv[])
-{
-  CommandLine cmd{__FILE__};
-  cmd.Parse(argc, argv);
+enum TestNumber : int
+  {
+    CSMA = 1,
+    WIFI = 3,
+  };
 
+void CsmaExample()
+{
   NS_LOG_INFO("Create nodes.");
   NodeContainer n{2};
 
@@ -69,6 +74,29 @@ int main(int argc, char *argv[])
   Simulator::Stop(Seconds(120));
   Simulator::Run();
   Simulator::Destroy ();
+}
+
+int main(int argc, char *argv[])
+{
+  int which_one;
+  CommandLine cmd{__FILE__};
+  cmd.AddValue("WhichTest",
+               "1. csma test\n 2. header serialization test\n",
+               which_one);
+  cmd.Parse(argc, argv);
+
+  switch (which_one)
+    {
+    case TestNumber::CSMA:
+      CsmaExample();
+      break;
+    case TestNumber::WIFI:
+      WifiTest();
+      break;
+    default:
+      NS_LOG_ERROR("No such test number!" << cmd);
+      break;
+    }
   return 0;
 }
 
