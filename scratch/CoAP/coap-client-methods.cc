@@ -34,7 +34,6 @@ void
 CoAPClient::Put ()
 {
   NS_LOG_FUNCTION (this);
-  NS_ASSERT (m_sendEvent.IsExpired());
 
   CoAPHeader hdr;
   CoAPHeader::PreparePut(hdr, 0, 0, m_mid++, false); // default is NON

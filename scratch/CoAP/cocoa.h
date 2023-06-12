@@ -76,9 +76,9 @@ namespace ns3
     using StrongEstimator = EstimatorImpl<4>;
 
 
-    WeakEstimator m_WeakEst{Seconds(2000), Seconds(2000)};
-    StrongEstimator m_StrongEst{Seconds(2000), Seconds(2000)};
-    Time m_OverallRTO{0};
+    WeakEstimator m_WeakEst{MilliSeconds(2000), MilliSeconds(2000)};
+    StrongEstimator m_StrongEst{MilliSeconds(2000), MilliSeconds(2000)};
+    Time m_OverallRTO{Seconds(2)};
 
   public:
     template <EstimatorType type>
@@ -132,6 +132,11 @@ namespace ns3
       else
         VBF = 1.5;
       return VBF * m_OverallRTO;
+    }
+
+    Time GetOverallRTO() const
+    {
+      return m_OverallRTO;
     }
   };
 

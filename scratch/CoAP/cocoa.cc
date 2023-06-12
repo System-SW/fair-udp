@@ -47,7 +47,9 @@ CoCoA::TransferNON(Ptr<Packet> packet)
 
   IncTC();
 
-  m_Context();      // go back to context
+  // go back to context
+  NS_LOG_INFO(m_Estimator.GetOverallRTO().GetSeconds());
+  Simulator::Schedule(m_Estimator.GetOverallRTO(), m_Context);
 }
 
 void
@@ -173,9 +175,7 @@ CoCoA::NotifyACK(Ptr<Packet> ack)
   if (m_ConStart == Seconds(0)) // its on NON procedure
     return;                     // ignore
 
-  auto rc = GetRC();
-  ClearConStates();
-  switch (rc)
+  switch (GetRC())
     {
     case 0:                       // normal
       {
@@ -192,5 +192,6 @@ CoCoA::NotifyACK(Ptr<Packet> ack)
     default:                      // ignore
       break;
     }
+  ClearConStates();
   m_Context();            // go back to context
 }
