@@ -188,7 +188,7 @@ void WifiTest()
   address.Assign(apDevices);
 
   const auto serverIpv4 = p2pInterfaces.GetAddress(GroundNodes::GC);
-  const auto serverPort = 19574;
+  const auto serverPort = 5683;
   const auto serverAddress = InetSocketAddress{serverIpv4, serverPort};
 
   auto coap_server = InstallCoAPServer(p2pNodes.Get(GroundNodes::GC));
