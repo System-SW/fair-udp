@@ -38,7 +38,6 @@ namespace ns3
   {
   private:
 
-    template <unsigned int K>
     class EstimatorImpl
     {
     private:
@@ -61,6 +60,7 @@ namespace ns3
         return m_RTO;
       }
 
+      template <EstimatorType type>
       void UpdatePeriods(Time newRTT)
       {
         constexpr static double alpha = 0.25;
@@ -68,57 +68,45 @@ namespace ns3
         m_RTT = (1 - alpha) * m_RTT + alpha * newRTT;
         m_RTTVAR = (1 - beta) * m_RTTVAR
           + beta * Seconds(std::abs((m_RTT - newRTT).GetSeconds()));
-        m_RTO = m_RTT + K * m_RTTVAR;
+
+        if constexpr (type == EstimatorType::STRONG)
+          {
+            constexpr static unsigned int K = 4;
+            m_RTO = newRTT + K * m_RTTVAR;
+          }
+        else
+          {
+            constexpr static unsigned int K = 1;
+            m_RTO = m_RTT + K * m_RTTVAR;
+          }
       }
     };
 
-    using WeakEstimator = EstimatorImpl<1>;
-    using StrongEstimator = EstimatorImpl<4>;
-
-
-    WeakEstimator m_WeakEst{MilliSeconds(2000), MilliSeconds(2000)};
-    StrongEstimator m_StrongEst{MilliSeconds(2000), MilliSeconds(2000)};
+    EstimatorImpl m_Impl{MilliSeconds(0), MilliSeconds(2000)};
     Time m_OverallRTO{Seconds(2)};
 
   public:
-    template <EstimatorType type>
     Time GetRTT() const
     {
-      if constexpr (type == EstimatorType::STRONG)
-        {
-          return m_StrongEst.GetRTT();
-        }
-      else
-        {
-          return m_WeakEst.GetRTT();
-        }
+      return m_Impl.GetRTT();
     }
 
-    template <EstimatorType type>
     Time GetRTO() const
     {
-      if constexpr (type == EstimatorType::STRONG)
-        {
-          return m_StrongEst.GetRTO();
-        }
-      else
-        {
-          return m_WeakEst.GetRTO();
-        }
+      return m_Impl.GetRTO();
     }
 
     template <EstimatorType type>
     void UpdatePeriods(Time newRTT)
     {
+      m_Impl.UpdatePeriods<type>(newRTT);
       if constexpr (type == EstimatorType::STRONG)
         {
-          m_StrongEst.UpdatePeriods(newRTT);
-          m_OverallRTO = 0.5 * m_StrongEst.GetRTO() + 0.5 * m_OverallRTO;
+          m_OverallRTO = 0.5 * GetRTO() + 0.5 * m_OverallRTO;
         }
       else
         {
-          m_WeakEst.UpdatePeriods(newRTT);
-          m_OverallRTO = 0.25 * m_WeakEst.GetRTO() + 0.75 * m_OverallRTO;
+          m_OverallRTO = 0.25 * GetRTO() + 0.75 * m_OverallRTO;
         }
     }
 
