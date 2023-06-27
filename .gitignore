@@ -51,3 +51,6 @@ cmake-build-release/
 !.vscode/tasks.json
 
 cscope*
+
+# tracing files
+log

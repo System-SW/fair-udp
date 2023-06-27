@@ -21,6 +21,27 @@
 #ifndef TESTS_H
 #define TESTS_H
 
+#include <unordered_map>
+#include <string>
+#include <fstream>
+#include <tuple>
+#include <vector>
+#include "ns3/nstime.h"
+
 void WifiTest();
+
+// for tracing
+class TransferSpeedCollector
+{
+public:
+  void CollectSpeed(std::string context, ns3::Time rtt);
+  ~TransferSpeedCollector();
+
+private:
+  void WriteToCSV();
+
+  std::unordered_map<std::string,
+                     std::vector<std::tuple<ns3::Time, ns3::Time>>> m_MsgIntervals;
+};
 
 #endif /* TESTS_H */
