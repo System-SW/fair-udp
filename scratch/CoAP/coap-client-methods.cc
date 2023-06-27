@@ -61,6 +61,7 @@ CoAPClient::Put ()
   Ptr<Packet> packet = Create<Packet>(m_size);
 
   m_CongestionController.TransferMessage(m_socket, packet, hdr);
+  NotifyMsgInterval();
   m_sendEvent =
     m_CongestionController.ScheduleTransfer(MakeCallback(&CoAPClient::Put, this));
 }

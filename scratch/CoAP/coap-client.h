@@ -23,6 +23,7 @@
 #include "ns3/event-id.h"
 #include "ns3/ptr.h"
 #include "ns3/ipv4-address.h"
+#include "ns3/traced-callback.h"
 #include "coap-header.h"
 #include "fdp-sender.h"
 
@@ -43,6 +44,11 @@ namespace ns3
     void SetRemote(Address ip, uint16_t port);
 
     void SetRemote(Address addr);
+
+    // for Tracing
+    using MsgIntervalCB = void (*) (Time);
+
+    void NotifyMsgInterval();
 
   protected:
     void DoDispose() override;
@@ -79,6 +85,9 @@ namespace ns3
 
     // FDP Congestion Controller
     FdpSenderCC m_CongestionController;
+
+    // for tracing
+    TracedCallback<Time> m_MsgIntervalCallback;
   };
 
 }    
