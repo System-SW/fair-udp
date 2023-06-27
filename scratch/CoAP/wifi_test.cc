@@ -17,6 +17,7 @@
  */
 #include <string>
 #include <tuple>
+#include <algorithm>
 #include "ns3/core-module.h"
 #include "ns3/nstime.h"
 #include "ns3/node-container.h"
@@ -29,6 +30,7 @@
 #include "ns3/packet-sink-helper.h"
 #include "ns3/on-off-helper.h"
 #include "coap-helper.h"
+#include "tests.h"
 
 using namespace ns3;
 using namespace std::string_literals;
@@ -197,6 +199,17 @@ void WifiTest()
 
   auto tcp_server = InstallTcpSink(p2pNodes.Get(GroundNodes::GC), serverAddress);
   auto tcp_clients = InstallTcpOnOff(wifiStaNodes, serverAddress);
+
+  TransferSpeedCollector collector;
+
+  std::for_each(wifiStaNodes.Begin(), wifiStaNodes.End(), [&collector](auto node)
+  {
+    std::ostringstream oss;
+    oss << "/NodeList/" << node->GetId()
+        << "/ApplicationList/*/$ns3::CoAPClient/MsgInterval";
+
+    Config::Connect(oss.str(), MakeCallback(&TransferSpeedCollector::CollectSpeed, &collector));
+  });
 
   Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 
