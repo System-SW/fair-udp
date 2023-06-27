@@ -41,7 +41,6 @@ CoAPClient::Put ()
   packet->AddHeader(hdr);
 
   m_CongestionController.TransferMsg(packet, MakeCallback(&CoAPClient::Put, this));
-  NotifyMsgInterval();
 }
 
 template <>

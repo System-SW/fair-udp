@@ -93,6 +93,11 @@ CoAPClient::NotifyMsgInterval()
 {
   auto rtt = m_CongestionController.GetRTT();
   m_MsgIntervalCallback(rtt);
+  if (!Simulator::IsFinished())
+    {
+      Simulator::Schedule(Seconds(1),
+                          MakeCallback(&CoAPClient::NotifyMsgInterval, this));
+    }
 }
 
 void
@@ -152,6 +157,8 @@ CoAPClient::StartApplication ()
 
   m_socket->SetRecvCallback(MakeCallback(&CoAPClient::HandleRecv, this));
   m_sendEvent = Simulator::Schedule(Seconds(0.1), &CoAPClient::Put, this);
+  NotifyMsgInterval();
+  // Simulator::Schedule(Seconds(0.1), &CoAPClient::SendPing, this, 0x1234);
 }
 
 void
