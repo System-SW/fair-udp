@@ -52,7 +52,11 @@ TypeId CoAPClient::GetTypeId ()
                    "The destination port of the CoAP Client",
                    UintegerValue (5683),
                    MakeUintegerAccessor (&CoAPClient::m_Port),
-                   MakeUintegerChecker<uint16_t> ());
+                   MakeUintegerChecker<uint16_t> ())
+    .AddTraceSource ("MsgInterval",
+                     "notify msg transfer interval.",
+                     MakeTraceSourceAccessor(&CoAPClient::m_MsgIntervalCallback),
+                     "ns3::CoAPClient::MsgIntervalCB")
     ;
   return tid;
 }
@@ -81,6 +85,14 @@ CoAPClient::SetRemote (Address addr)
 {
   NS_LOG_FUNCTION (this << addr);
   m_Address = addr;
+}
+
+
+void
+CoAPClient::NotifyMsgInterval()
+{
+  auto rtt = m_CongestionController.GetRTT();
+  m_MsgIntervalCallback(rtt);
 }
 
 void

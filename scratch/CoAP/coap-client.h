@@ -23,6 +23,7 @@
 #include "ns3/event-id.h"
 #include "ns3/ptr.h"
 #include "ns3/ipv4-address.h"
+#include "ns3/traced-callback.h"
 #include "coap-header.h"
 #include "cocoa.h"
 
@@ -44,6 +45,11 @@ namespace ns3
     void SetRemote(Address ip, uint16_t port);
 
     void SetRemote(Address addr);
+
+    // for Tracing
+    using MsgIntervalCB = void (*) (Time);
+
+    void NotifyMsgInterval();
 
   protected:
     void DoDispose() override;
@@ -82,6 +88,9 @@ namespace ns3
 
     // CoCoA Congestion Controller
     CoCoA m_CongestionController{MakeCallback(&CoAPClient::SendPacket, this)};
+
+    // for tracing
+    TracedCallback<Time> m_MsgIntervalCallback;
   };
 
 }    
