@@ -54,3 +54,4 @@ cscope*
 
 # tracing files
 log
+.csv
