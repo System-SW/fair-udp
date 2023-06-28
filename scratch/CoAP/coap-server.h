@@ -25,6 +25,7 @@
 #include "ns3/ptr.h"
 #include "ns3/ipv4-address.h"
 #include "ns3/inet-socket-address.h"
+#include "ns3/traced-callback.h"
 #include "coap-header.h"
 #include "fdp-receiver.h"
 
@@ -83,6 +84,14 @@ namespace ns3
     std::unordered_map<Address, FdpReceiverCC, AddressHash> m_CC_infos;
 
     FdpReceiverCC& GetCongestionController(const Address &addr);
+
+  public:                       // for tracing
+    using ReceivePacketCB = void (*) (const Ptr<Packet>);
+
+    void NotifyPacketReceive(const Ptr<Packet>);
+
+  private:
+    TracedCallback<const Ptr<Packet>> m_ReceiveCallback;
   };
 }    
 

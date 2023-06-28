@@ -60,6 +60,8 @@ CoAPClient::Put ()
   CoAPHeader::PreparePut(hdr, 0, 0, m_mid++);
   Ptr<Packet> packet = Create<Packet>(m_size);
 
+  NotifyPacketTransmission(packet); // tracing purpose
+
   m_CongestionController.TransferMessage(m_socket, packet, hdr);
   m_sendEvent =
     m_CongestionController.ScheduleTransfer(MakeCallback(&CoAPClient::Put, this));
@@ -103,4 +105,10 @@ CoAPClient::MeasureRTTWithPingPong(CoAPHeader pong_hdr)
   m_ping_time = Time{0};
   NS_LOG_INFO("ping pong done " << m_Rtt);
   return m_Rtt;
+}
+
+void
+CoAPClient::NotifyPacketTransmission(const Ptr<Packet> p)
+{
+  m_TransferCallback(p);
 }
