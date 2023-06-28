@@ -49,7 +49,7 @@ struct WifiTestArgs
 
 static auto SERVER_BANDWIDTH = "1000Mbps"s;
 static std::size_t NUM_UAVS = 40;
-static Time SIMUL_TIME = Seconds(120);
+static Time SIMUL_TIME = Seconds(30);
 
 static NetDeviceContainer
 InstallP2P(NodeContainer& Nodes)
@@ -202,15 +202,29 @@ void WifiTest()
   auto tcp_clients = InstallTcpOnOff(wifiStaNodes, serverAddress);
 
   TransferSpeedCollector collector;
+  LatencyRecoder latencyRecoder{"errors.csv", "latency_"};
 
-  std::for_each(wifiStaNodes.Begin(), wifiStaNodes.End(), [&collector](auto node)
+  std::for_each(wifiStaNodes.Begin(), wifiStaNodes.End(), [&collector,
+                                                           &latencyRecoder](auto node)
   {
     std::ostringstream oss;
     oss << "/NodeList/" << node->GetId()
-        << "/ApplicationList/*/$ns3::CoAPClient/MsgInterval";
+        << "/ApplicationList/*/";
 
-    Config::Connect(oss.str(), MakeCallback(&TransferSpeedCollector::CollectSpeed, &collector));
+    Config::Connect(oss.str() + "$ns3::CoAPClient/MsgInterval",
+                    MakeCallback(&TransferSpeedCollector::CollectSpeed, &collector));
+
+    Config::Connect(oss.str() + "$ns3::CoAPClient/MsgTransfer",
+                    MakeCallback(&LatencyRecoder::RecordTransfer, &latencyRecoder));
   });
+
+  {
+    std::ostringstream oss;
+    oss << "/NodeList/" << p2pNodes.Get(GroundNodes::GC)->GetId()
+        << "/ApplicationList/*/$ns3::CoAPServer/PacketReceived";
+    Config::Connect(oss.str(), MakeCallback(&LatencyRecoder::RecordReceive, &latencyRecoder));
+  }
+
 
   Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
 

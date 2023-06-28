@@ -20,9 +20,10 @@
 #include <regex>
 #include <sstream>
 #include <fstream>
-#include "tests.h"
 #include "ns3/simulator.h"
 #include "ns3/packet.h"
+#include "tests.h"
+#include "trace-tag.h"
 
 static std::string
 ParseNodeId(const std::string& context)
@@ -32,6 +33,23 @@ ParseNodeId(const std::string& context)
   auto re_iter = std::sregex_iterator(context.begin(), context.end(),
                                       node_number_re);
   return *re_iter->begin();
+}
+
+static std::string
+Uint16ToString(uint16_t value)
+{
+  std::ostringstream os;
+  os << uint32_t(value);
+  return os.str();
+}
+
+static uint16_t
+StringToUint16(const std::string& value)
+{
+  std::istringstream is{value};
+  uint16_t retval;
+  is >> retval;
+  return retval;
 }
 
 void
@@ -73,10 +91,17 @@ LatencyRecoder::LatencyRecoder(std::string errorRateFile, std::string latencyFil
 void
 LatencyRecoder::RecordTransfer(std::string context, ns3::Ptr<const ns3::Packet> p)
 {
+  auto node_id = ParseNodeId(context);
   auto current_time = ns3::Simulator::Now();
-  PUID_t packet_id = p->GetUid();
+  PUID_t packet_id = GenerateNewPacketId();
+
+  // convert string node id to uint16
+  uint16_t node_uint_id = StringToUint16(node_id);
+  ns3::PacketTraceTag trace_tag{node_uint_id, packet_id};
+  p->AddPacketTag(trace_tag);
+
   record_t record = { false, current_time, packet_id };
-  m_LatencyRecords[context].push_back(record);
+  m_LatencyRecords[node_id].push_back(record);
 }
 
 
@@ -84,8 +109,18 @@ LatencyRecoder::RecordTransfer(std::string context, ns3::Ptr<const ns3::Packet> 
 void
 LatencyRecoder::RecordReceive(std::string context, ns3::Ptr<const ns3::Packet> p)
 {
-  PUID_t packet_id = p->GetUid();
-  auto& record_list = m_LatencyRecords[context];
+  ns3::PacketTraceTag trace_tag; // empty tag
+  if (!p->PeekPacketTag(trace_tag))
+    {
+      std::cerr << "unable to find packet trace tag!!!\n";
+      return;
+    }
+
+  // extract data from packet tag
+  PUID_t packet_id = trace_tag.GetId();
+  std::string node_id = Uint16ToString(trace_tag.GetNodeId());
+
+  auto& record_list = m_LatencyRecords[node_id];
   auto target = std::find_if(record_list.begin(), record_list.end(),
                              [packet_id](record_t record)
                              {
@@ -103,7 +138,7 @@ LatencyRecoder::RecordReceive(std::string context, ns3::Ptr<const ns3::Packet> p
     }
   else
     {
-      std::cerr << "strange target detected\n";
+      std::cerr << packet_id << " strange target detected\n";
     }
 }
 
@@ -152,4 +187,10 @@ LatencyRecoder::RecordLatency() const
             }
         }
     }
+}
+
+LatencyRecoder::PUID_t
+LatencyRecoder::GenerateNewPacketId()
+{
+  return m_PacketIdCounter++;
 }
