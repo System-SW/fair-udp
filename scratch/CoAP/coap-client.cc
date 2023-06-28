@@ -228,3 +228,9 @@ void CoAPClient::HandleRecv(Ptr<Socket> socket)
     }
 
 }
+
+void
+CoAPClient::NotifyPacketTransmission(Ptr<const Packet> p)
+{
+  m_TransferCallback(p);
+}
