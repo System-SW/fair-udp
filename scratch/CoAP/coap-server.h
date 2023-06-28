@@ -23,6 +23,8 @@
 #include "ns3/event-id.h"
 #include "ns3/ptr.h"
 #include "ns3/ipv4-address.h"
+#include "ns3/inet-socket-address.h"
+#include "ns3/traced-callback.h"
 #include "coap-header.h"
 
 namespace ns3
@@ -64,6 +66,14 @@ namespace ns3
     uint16_t m_Port{5683};
     Ptr<Socket> m_socket{0};
     Ptr<Socket> m_socket6{0};
+
+  public:                       // for tracing
+    using ReceivePacketCB = void (*) (const Ptr<Packet>);
+
+    void NotifyPacketReceive(const Ptr<Packet>);
+
+  private:
+    TracedCallback<const Ptr<Packet>> m_ReceiveCallback;
   };
 }    
 

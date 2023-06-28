@@ -46,11 +46,6 @@ namespace ns3
 
     void SetRemote(Address addr);
 
-    // for Tracing
-    using MsgIntervalCB = void (*) (Time);
-
-    void NotifyMsgInterval();
-
   protected:
     void DoDispose() override;
 
@@ -89,8 +84,18 @@ namespace ns3
     // CoCoA Congestion Controller
     CoCoA m_CongestionController{MakeCallback(&CoAPClient::SendPacket, this)};
 
+  public:
+    // for Tracing
+    using MsgIntervalCB = void (*) (Time);
+    using TransferPacketCB = void (*) (const Ptr<Packet>);
+
+    void NotifyMsgInterval();
+    void NotifyPacketTransmission(const Ptr<Packet>);
+
+  private:
     // for tracing
     TracedCallback<Time> m_MsgIntervalCallback;
+    TracedCallback<const Ptr<Packet>> m_TransferCallback;
   };
 
 }    

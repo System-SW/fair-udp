@@ -41,7 +41,11 @@ TypeId CoAPServer::GetTypeId ()
                    "The destination port of the CoAP Client",
                    UintegerValue (5683),
                    MakeUintegerAccessor (&CoAPServer::m_Port),
-                   MakeUintegerChecker<uint16_t> ());
+                   MakeUintegerChecker<uint16_t> ())
+    .AddTraceSource("PacketReceived",
+                    "probe for packet receiving",
+                    MakeTraceSourceAccessor(&CoAPServer::m_ReceiveCallback),
+                    "ns3::CoAPServer::ReceivePacketCB")
     ;
   return tid;
 }
@@ -112,6 +116,8 @@ void CoAPServer::HandleRecv(Ptr<Socket> socket)
 
   while (Ptr<Packet> p = socket->RecvFrom(addr))
     {
+      NotifyPacketReceive(p);   // for tracing purpose
+
       CoAPHeader hdr;
       p->PeekHeader(hdr);
 
@@ -167,4 +173,10 @@ CoAPServer::SendPacket(Ptr<Packet> packet, Address addr)
     {
       NS_ABORT_MSG(this << "SendPacket Method requires InetSocketAddress.");
     }
+}
+
+void
+CoAPServer::NotifyPacketReceive(const Ptr<Packet> p)
+{
+  m_ReceiveCallback(p);
 }

@@ -57,6 +57,10 @@ TypeId CoAPClient::GetTypeId ()
                      "notify msg transfer interval.",
                      MakeTraceSourceAccessor(&CoAPClient::m_MsgIntervalCallback),
                      "ns3::CoAPClient::MsgIntervalCB")
+    .AddTraceSource("MsgTransfer",
+                    "notify msg transfer.",
+                    MakeTraceSourceAccessor(&CoAPClient::m_TransferCallback),
+                    "ns3::CoAPClient::TransferPacketCB")
     ;
   return tid;
 }

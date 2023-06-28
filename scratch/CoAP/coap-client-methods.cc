@@ -41,6 +41,7 @@ CoAPClient::Put ()
   packet->AddHeader(hdr);
 
   m_CongestionController.TransferMsg(packet, MakeCallback(&CoAPClient::Put, this));
+  NotifyPacketTransmission(packet); // tracing purpose
 }
 
 template <>
@@ -82,4 +83,10 @@ CoAPClient::MeasureRTTWithPingPong(CoAPHeader pong_hdr)
   m_ping_time = Time{0};
   NS_LOG_INFO("ping pong done " << m_Rtt);
   return m_Rtt;
+}
+
+void
+CoAPClient::NotifyPacketTransmission(const Ptr<Packet> p)
+{
+  m_TransferCallback(p);
 }
