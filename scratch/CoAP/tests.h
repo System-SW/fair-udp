@@ -62,9 +62,11 @@ public:
 private:
   void RecordErrorRate() const;
   void RecordLatency() const;
+  PUID_t GenerateNewPacketId();
 
   const std::string m_ErrorRateFileName;
   const std::string m_LatencyFileName;
+  PUID_t m_PacketIdCounter{0};
   std::unordered_map<std::string, std::vector<record_t>> m_LatencyRecords;
 };
 
