@@ -87,15 +87,15 @@ namespace ns3
   public:
     // for Tracing
     using MsgIntervalCB = void (*) (Time);
-    using TransferPacketCB = void (*) (const Ptr<Packet>);
+    using TransferPacketCB = void (*) (Ptr<const Packet>);
 
     void NotifyMsgInterval();
-    void NotifyPacketTransmission(const Ptr<Packet>);
+    void NotifyPacketTransmission(Ptr<const Packet>);
 
   private:
     // for tracing
     TracedCallback<Time> m_MsgIntervalCallback;
-    TracedCallback<const Ptr<Packet>> m_TransferCallback;
+    TracedCallback<Ptr<const Packet>> m_TransferCallback;
   };
 
 }    

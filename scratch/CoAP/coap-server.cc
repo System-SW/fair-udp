@@ -176,7 +176,7 @@ CoAPServer::SendPacket(Ptr<Packet> packet, Address addr)
 }
 
 void
-CoAPServer::NotifyPacketReceive(const Ptr<Packet> p)
+CoAPServer::NotifyPacketReceive(Ptr<const Packet> p)
 {
   m_ReceiveCallback(p);
 }

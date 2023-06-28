@@ -68,12 +68,12 @@ namespace ns3
     Ptr<Socket> m_socket6{0};
 
   public:                       // for tracing
-    using ReceivePacketCB = void (*) (const Ptr<Packet>);
+    using ReceivePacketCB = void (*) (Ptr<const Packet>);
 
-    void NotifyPacketReceive(const Ptr<Packet>);
+    void NotifyPacketReceive(Ptr<const Packet>);
 
   private:
-    TracedCallback<const Ptr<Packet>> m_ReceiveCallback;
+    TracedCallback<Ptr<const Packet>> m_ReceiveCallback;
   };
 }    
 

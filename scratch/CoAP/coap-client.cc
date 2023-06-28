@@ -223,3 +223,9 @@ CoAPClient::SendPacket(Ptr<Packet> packet) const
 {
   m_socket->Send(packet);
 }
+
+void
+CoAPClient::NotifyPacketTransmission(Ptr<const Packet> p)
+{
+  m_TransferCallback(p);
+}

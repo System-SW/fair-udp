@@ -84,9 +84,3 @@ CoAPClient::MeasureRTTWithPingPong(CoAPHeader pong_hdr)
   NS_LOG_INFO("ping pong done " << m_Rtt);
   return m_Rtt;
 }
-
-void
-CoAPClient::NotifyPacketTransmission(const Ptr<Packet> p)
-{
-  m_TransferCallback(p);
-}

@@ -71,7 +71,7 @@ LatencyRecoder::LatencyRecoder(std::string errorRateFile, std::string latencyFil
 
 // for CoAPClient Side
 void
-LatencyRecoder::RecordTransfer(std::string context, const ns3::Ptr<ns3::Packet> p)
+LatencyRecoder::RecordTransfer(std::string context, ns3::Ptr<const ns3::Packet> p)
 {
   auto current_time = ns3::Simulator::Now();
   PUID_t packet_id = p->GetUid();
@@ -82,7 +82,7 @@ LatencyRecoder::RecordTransfer(std::string context, const ns3::Ptr<ns3::Packet> 
 
 // for CoAPServer Side
 void
-LatencyRecoder::RecordReceive(std::string context, const ns3::Ptr<ns3::Packet> p)
+LatencyRecoder::RecordReceive(std::string context, ns3::Ptr<const ns3::Packet> p)
 {
   PUID_t packet_id = p->GetUid();
   auto& record_list = m_LatencyRecords[context];

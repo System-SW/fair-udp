@@ -55,8 +55,8 @@ public:
   using record_t = std::tuple<bool, ns3::Time, PUID_t>;
 
   LatencyRecoder(std::string errorRateFile, std::string latencyFilePrefix);
-  void RecordTransfer(std::string context, const ns3::Ptr<ns3::Packet>);
-  void RecordReceive(std::string context, const ns3::Ptr<ns3::Packet>);
+  void RecordTransfer(std::string context, ns3::Ptr<const ns3::Packet>);
+  void RecordReceive(std::string context, ns3::Ptr<const ns3::Packet>);
   ~LatencyRecoder();
 
 private:
