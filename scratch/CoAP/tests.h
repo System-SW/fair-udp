@@ -31,6 +31,7 @@
 void WifiTest();
 
 // for tracing
+
 class TransferSpeedCollector
 {
 public:
@@ -38,10 +39,33 @@ public:
   ~TransferSpeedCollector();
 
 private:
-  void WriteToCSV();
-
   std::unordered_map<std::string,
                      std::vector<std::tuple<ns3::Time, ns3::Time>>> m_MsgIntervals;
+};
+
+namespace ns3
+{
+  class Packet;
+}
+
+class LatencyRecoder
+{
+public:
+  using PUID_t = uint64_t;
+  using record_t = std::tuple<bool, ns3::Time, PUID_t>;
+
+  LatencyRecoder(std::string errorRateFile, std::string latencyFilePrefix);
+  void RecordTransfer(std::string context, const ns3::Ptr<ns3::Packet>);
+  void RecordReceive(std::string context, const ns3::Ptr<ns3::Packet>);
+  ~LatencyRecoder();
+
+private:
+  void RecordErrorRate() const;
+  void RecordLatency() const;
+
+  const std::string m_ErrorRateFileName;
+  const std::string m_LatencyFileName;
+  std::unordered_map<std::string, std::vector<record_t>> m_LatencyRecords;
 };
 
 #endif /* TESTS_H */
