@@ -195,3 +195,8 @@ CoCoA::NotifyACK(Ptr<Packet> ack)
   ClearConStates();
   m_Context();            // go back to context
 }
+
+Time CoCoA::GetRTO() const
+{
+  return m_Estimator.GetRTO();
+}

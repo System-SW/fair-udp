@@ -192,6 +192,7 @@ namespace ns3
     void TransferMsg(Ptr<Packet> packet,
                      std::function<void(void)> &&context = [](){});
     void NotifyACK(Ptr<Packet> ack);
+    Time GetRTO() const;
   };
 }    
 

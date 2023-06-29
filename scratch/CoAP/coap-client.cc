@@ -95,7 +95,7 @@ CoAPClient::SetRemote (Address addr)
 void
 CoAPClient::NotifyMsgInterval()
 {
-  auto rtt = m_CongestionController.GetRTT();
+  auto rtt = m_CongestionController.GetRTO();
   m_MsgIntervalCallback(rtt);
   if (!Simulator::IsFinished())
     {
