@@ -191,7 +191,7 @@ LatencyRecoder::RecordLatency() const
   // record them per CoAP Client file
   for (const auto& [node, records] : m_LatencyRecords)
     {
-      std::ofstream latencyfile{m_ErrorRateFileName + node + ".csv"};
+      std::ofstream latencyfile{m_ErrorRateFileName + m_LatencyFileName + node + ".csv"};
       latencyfile << "Latency(s)\n"; // write csv header
 
       for (auto record : records)
