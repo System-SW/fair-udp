@@ -166,7 +166,7 @@ uint32_t FDPFeedbackHeader::Deserialize(Buffer::Iterator start)
 
   m_reset_bit = bool(field & RESET_MASK);
   m_seq_bit = bool(field & SEQ_BIT_MASK);
-  m_msg_seq = uint8_t(field & MSG_SEQ_MASK) >> 12;
+  m_msg_seq = uint8_t((field & MSG_SEQ_MASK) >> 12);
   NS_ABORT_IF(m_msg_seq > 2);
 
   return GetSerializedSize();
