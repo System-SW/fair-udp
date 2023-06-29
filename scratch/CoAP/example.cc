@@ -123,6 +123,7 @@ void HeaderTest()
     fdp_hdr.SetSeqBit(false);
 
     NS_LOG_INFO(fdp_hdr);
+    NS_LOG_INFO(coap_hdr);
 
     Ptr<Packet> p = Create<Packet>();
 
@@ -138,6 +139,7 @@ void HeaderTest()
     p->RemoveHeader(fdp_de_hdr);
 
     NS_LOG_INFO(fdp_de_hdr);
+    NS_LOG_INFO(coap_de_hdr);
   }
 }
 
