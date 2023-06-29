@@ -63,7 +63,7 @@ void CsmaExample()
   CoAPClientHelper coap_client{serverAddress};
   ApplicationContainer client_app = coap_client.Install(n.Get(0));
   client_app.Start(Seconds(1.0));
-  client_app.Stop(Seconds(30.0));
+  client_app.Stop(Seconds(120.0));
 
   CoAPServerHelper coap_server;
   ApplicationContainer server_app = coap_server.Install(n.Get(1));

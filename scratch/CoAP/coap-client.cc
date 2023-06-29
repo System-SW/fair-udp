@@ -24,6 +24,7 @@
 #include "ns3/socket-factory.h"
 #include "ns3/packet.h"
 #include "ns3/uinteger.h"
+#include "option.h"
 #include "coap-client.h"
 
 using namespace ns3;
@@ -95,7 +96,16 @@ CoAPClient::SetRemote (Address addr)
 void
 CoAPClient::NotifyMsgInterval()
 {
-  auto rtt = m_CongestionController.GetRTT();
+  Time rtt;
+  if constexpr (UseFDP)
+    {
+      rtt = m_FdpCC.GetRTT();
+    }
+  else
+    {
+      rtt = m_CoCoACC.GetRTO();
+    }
+
   m_MsgIntervalCallback(rtt);
   if (!Simulator::IsFinished())
     {
@@ -207,13 +217,15 @@ void CoAPClient::HandleRecv(Ptr<Socket> socket)
               break;
             case Signal::UNASSIGNED:
               NS_LOG_INFO("Handle FDP Feedback.");
-              p->RemoveHeader(hdr); // remove CoAP header
-              m_CongestionController.HandleFeedback(p);
-              if (m_sendEvent.IsExpired())
+              if constexpr (UseFDP)
                 {
-                  m_sendEvent =
-                    m_CongestionController.
-                    ScheduleTransfer(MakeCallback(&CoAPClient::Put, this));
+                  p->RemoveHeader(hdr); // remove CoAP header
+                  m_FdpCC.HandleFeedback(p);
+                  if (m_sendEvent.IsExpired())
+                    {
+                      m_sendEvent =
+                        m_FdpCC.ScheduleTransfer(MakeCallback(&CoAPClient::Put, this));
+                    }
                 }
               break;
             default:
@@ -227,6 +239,12 @@ void CoAPClient::HandleRecv(Ptr<Socket> socket)
         }
     }
 
+}
+
+void
+CoAPClient::SendPacket(Ptr<Packet> packet) const
+{
+  m_socket->Send(packet);
 }
 
 void

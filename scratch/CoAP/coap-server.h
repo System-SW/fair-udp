@@ -69,7 +69,6 @@ namespace ns3
     Ptr<Socket> m_socket{0};
     Ptr<Socket> m_socket6{0};
 
-
     // FDP Congestion Control Information
     struct AddressHash
     {

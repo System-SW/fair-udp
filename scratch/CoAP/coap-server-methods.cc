@@ -24,6 +24,7 @@
 #include "ns3/socket-factory.h"
 #include "ns3/packet.h"
 #include "ns3/uinteger.h"
+#include "option.h"
 #include "coap-server.h"
 
 using namespace ns3;
@@ -48,20 +49,29 @@ void CoAPServer::HandleMethod<CoAPHeader::Method::PUT>
                                         CoAPHeader::Success::CREATED);
       SendPacket(response, addr);
 
-      // FDP congestion control part
-      FDPMessageHeader fdp_hdr;
-      request->RemoveHeader(fdp_hdr);
-      auto feedback = GetCongestionController(addr).GenerateFeedback(fdp_hdr);
-      if (feedback != nullptr)
+      if constexpr (UseFDP)
         {
-          CoAPHeader coap_feedback_hdr = CoAPHeader::MakeUnassignedSignal(0, 0);
-          feedback->AddHeader(coap_feedback_hdr);
-          SendPacket(feedback, addr);
+          // FDP congestion control part
+          FDPMessageHeader fdp_hdr;
+          request->RemoveHeader(fdp_hdr);
+          auto feedback = GetCongestionController(addr).GenerateFeedback(fdp_hdr);
+          if (feedback != nullptr)
+            {
+              CoAPHeader coap_feedback_hdr = CoAPHeader::MakeUnassignedSignal(0, 0);
+              feedback->AddHeader(coap_feedback_hdr);
+              SendPacket(feedback, addr);
+            }
         }
     }
   else // CON
     {
-
+      NS_LOG_INFO("Receive PUT (CON)");
+      auto response =
+        CoAPHeader::MakeResponse<CoAPHeader::Method::PUT,
+                                 true>(request_hdr,
+                                       m_mid++,
+                                       CoAPHeader::Success::CREATED);
+      SendPacket(response, addr);
     }
 }
 

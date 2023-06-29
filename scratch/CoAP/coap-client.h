@@ -26,6 +26,7 @@
 #include "ns3/traced-callback.h"
 #include "coap-header.h"
 #include "fdp-sender.h"
+#include "cocoa.h"
 
 namespace ns3
 {
@@ -65,6 +66,8 @@ namespace ns3
 
     Time MeasureRTTWithPingPong(CoAPHeader pong_hdr);
 
+    void SendPacket(Ptr<Packet> packet) const;
+
     uint32_t m_size{0}; // packet payload size in bytes (for PUT)
     uint16_t m_mid{0};  // message id
 
@@ -79,7 +82,9 @@ namespace ns3
     EventId m_sendEvent{EventId()};
 
     // FDP Congestion Controller
-    FdpSenderCC m_CongestionController;
+    FdpSenderCC m_FdpCC;
+    // CoCoA Congestion Controller
+    CoCoA m_CoCoACC{MakeCallback(&CoAPClient::SendPacket, this)};
 
   public:
     // for Tracing

@@ -24,6 +24,7 @@
 #include "ns3/socket-factory.h"
 #include "ns3/packet.h"
 #include "ns3/uinteger.h"
+#include "option.h"
 #include "coap-client.h"
 
 using namespace ns3;
@@ -34,7 +35,6 @@ void
 CoAPClient::Put ()
 {
   NS_LOG_FUNCTION (this);
-  NS_ASSERT (m_sendEvent.IsExpired());
 
   // XXX: fdp may control CoAP Message Transfer.
   // 1. Normal Message Transfer
@@ -57,14 +57,21 @@ CoAPClient::Put ()
   //       set RTO as RTT value.
 
   CoAPHeader hdr;
-  CoAPHeader::PreparePut(hdr, 0, 0, m_mid++);
+  CoAPHeader::PreparePut(hdr, 0, 0, m_mid++, false); // default is NON
   Ptr<Packet> packet = Create<Packet>(m_size);
 
   NotifyPacketTransmission(packet); // tracing purpose
 
-  m_CongestionController.TransferMessage(m_socket, packet, hdr);
-  m_sendEvent =
-    m_CongestionController.ScheduleTransfer(MakeCallback(&CoAPClient::Put, this));
+  if constexpr (UseFDP)
+    {
+      m_FdpCC.TransferMessage(m_socket, packet, hdr);
+      m_sendEvent =
+        m_FdpCC.ScheduleTransfer(MakeCallback(&CoAPClient::Put, this));
+    }
+  else
+    {
+      m_CoCoACC.TransferMsg(packet, MakeCallback(&CoAPClient::Put, this));
+    }
 }
 
 template <>
@@ -81,7 +88,11 @@ void CoAPClient::HandleResponse<CoAPHeader::Success::CREATED>
     }
   else  // CON
     {
-
+      NS_LOG_INFO("Piggyback ACK! " << hdr);
+      if constexpr (!UseFDP)
+        {
+          m_CoCoACC.NotifyACK(response);
+        }
     }
 }
 

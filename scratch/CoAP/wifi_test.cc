@@ -81,7 +81,7 @@ SettingWifi(Ptr<Node> apNode, NodeContainer& staNodes)
 
   // generate pcap file
   phy.SetPcapDataLinkType(WifiPhyHelper::DLT_IEEE802_11_RADIO);
-  phy.EnablePcap("coap-fdp", apDevices.Get(0));
+  phy.EnablePcap("/tmp/coap-cocoa", apDevices.Get(0));
 
   return {apDevices, staDevices};
 }
@@ -222,7 +222,8 @@ void WifiTest()
     std::ostringstream oss;
     oss << "/NodeList/" << p2pNodes.Get(GroundNodes::GC)->GetId()
         << "/ApplicationList/*/$ns3::CoAPServer/PacketReceived";
-    Config::Connect(oss.str(), MakeCallback(&LatencyRecoder::RecordReceive, &latencyRecoder));
+    Config::Connect(oss.str(), MakeCallback(&LatencyRecoder::RecordReceive,
+                                            &latencyRecoder));
   }
 
 
