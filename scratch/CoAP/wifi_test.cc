@@ -29,6 +29,7 @@
 #include "ns3/ipv4-global-routing-helper.h"
 #include "ns3/packet-sink-helper.h"
 #include "ns3/on-off-helper.h"
+#include "option.h"
 #include "coap-helper.h"
 #include "tests.h"
 
@@ -169,6 +170,14 @@ InstallTcpOnOff(NodeContainer &nodes, Address dest, Time start = Seconds(1),
 
 void WifiTest()
 {
+  if constexpr (UseFDP)
+    {
+      std::cout << "FDP Test\n";
+    }
+  else
+    {
+      std::cout << "CoAP Test\n";
+    }
   // wired part
   auto p2pNodes = NodeContainer{2};
   auto p2pDevices = InstallP2P(p2pNodes);
