@@ -40,8 +40,8 @@ CoAPClient::Put ()
   Ptr<Packet> packet = Create<Packet>(m_size);
   packet->AddHeader(hdr);
 
-  m_CongestionController.TransferMsg(packet, MakeCallback(&CoAPClient::Put, this));
   NotifyPacketTransmission(packet); // tracing purpose
+  m_CongestionController.TransferMsg(packet, MakeCallback(&CoAPClient::Put, this));
 }
 
 template <>

@@ -119,13 +119,24 @@ LatencyRecoder::RecordReceive(std::string context, ns3::Ptr<const ns3::Packet> p
   // extract data from packet tag
   PUID_t packet_id = trace_tag.GetId();
   std::string node_id = Uint16ToString(trace_tag.GetNodeId());
+  bool duplicated = false;
 
   auto& record_list = m_LatencyRecords[node_id];
   auto target = std::find_if(record_list.begin(), record_list.end(),
-                             [packet_id](record_t record)
+                             [packet_id, &duplicated](record_t record)
                              {
-                               return std::get<2>(record) == packet_id &&
-                                 std::get<0>(record) == false;
+                               if (std::get<2>(record) == packet_id)
+                                 {
+                                   if (std::get<0>(record))
+                                     {
+                                       // duplicated transmission
+                                       // cause of CoCoA periodically performs CON.
+                                       duplicated = true;
+                                       return false;
+                                     }
+                                   return true;
+                                 }
+                               return false;
                              });
 
   if (target != record_list.end()) // find it!
@@ -135,6 +146,10 @@ LatencyRecoder::RecordReceive(std::string context, ns3::Ptr<const ns3::Packet> p
       record_t& record = *target;
       std::get<0>(record) = true;
       std::get<1>(record) = current_time - std::get<1>(record);
+    }
+  else if (duplicated)
+    {
+      // do nothing!
     }
   else
     {

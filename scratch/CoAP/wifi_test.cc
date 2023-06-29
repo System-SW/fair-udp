@@ -221,7 +221,8 @@ void WifiTest()
     std::ostringstream oss;
     oss << "/NodeList/" << p2pNodes.Get(GroundNodes::GC)->GetId()
         << "/ApplicationList/*/$ns3::CoAPServer/PacketReceived";
-    Config::Connect(oss.str(), MakeCallback(&LatencyRecoder::RecordReceive, &latencyRecoder));
+    Config::Connect(oss.str(), MakeCallback(&LatencyRecoder::RecordReceive,
+                                            &latencyRecoder));
   }
 
 
