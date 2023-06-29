@@ -201,7 +201,7 @@ void WifiTest()
   auto tcp_clients = InstallTcpOnOff(wifiStaNodes, serverAddress);
 
   TransferSpeedCollector collector;
-  LatencyRecoder latencyRecoder{"./error", "latency_"};
+  LatencyRecoder latencyRecoder{"./error/", "latency_"};
 
   std::for_each(wifiStaNodes.Begin(), wifiStaNodes.End(), [&collector,
                                                            &latencyRecoder](auto node)
