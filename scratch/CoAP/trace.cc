@@ -152,7 +152,8 @@ void
 LatencyRecoder::RecordErrorRate() const
 {
   // calculate Error Rate for each CoAP Clients and writes them to an single file.
-  std::ofstream errorfile{m_ErrorRateFileName + ".csv"};
+  std::ofstream errorfile{m_ErrorRateFileName + "error_rates.csv"};
+  errorfile << "Node,ErrorRate\n";
 
   for (const auto& [node, records] : m_LatencyRecords)
     {
@@ -175,7 +176,7 @@ LatencyRecoder::RecordLatency() const
   // record them per CoAP Client file
   for (const auto& [node, records] : m_LatencyRecords)
     {
-      std::ofstream latencyfile{m_ErrorRateFileName + node + ".csv"};
+      std::ofstream latencyfile{m_LatencyFileName + node + ".csv"};
       latencyfile << "Latency(s)\n"; // write csv header
 
       for (auto record : records)
