@@ -70,6 +70,7 @@ CoAPClient::Put ()
     }
   else
     {
+      packet->AddHeader(hdr);
       m_CoCoACC.TransferMsg(packet, MakeCallback(&CoAPClient::Put, this));
     }
 }
