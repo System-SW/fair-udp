@@ -73,6 +73,13 @@ uint32_t CoAPHeader::Deserialize(Buffer::Iterator start)
 void CoAPHeader::Print(std::ostream& os [[maybe_unused]]) const
 {
   /* XXX: implement Print */
+  os << "CoAP Header: Version: " << static_cast<uint32_t>(GetVersion())
+     << " Type: " << static_cast<uint32_t>(GetType())
+     << " TKL: " << static_cast<uint32_t>(GetTKL())
+     << " Class: " << static_cast<uint32_t>(GetClass())
+     << " Code: " << static_cast<uint32_t>(GetCode<CoAPHeader::Class::METHOD>())
+     << " MID: " << static_cast<uint32_t>(GetMID())
+     << " Token: " << static_cast<uint32_t>(GetToken());
 }
 
 uint8_t CoAPHeader::GetVersion() const
