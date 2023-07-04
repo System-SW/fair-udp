@@ -15,28 +15,28 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * Author: Chang-Hui Kim <kch9001@gmail.com>, Daeseong-Ki <kmeos1579@gmail.com>
+ * Author: Chang-Hui Kim <kch9001@gmail.com>
  */
 #pragma once
-#ifndef COAP_HELPER_H
-#define COAP_HELPER_H
+#ifndef FDP_CLIENT_SERVER_HELPER_H
+#define FDP_CLIENT_SERVER_HELPER_H
 
+#include <cstdint>
 #include "ns3/application-container.h"
 #include "ns3/node-container.h"
 #include "ns3/object-factory.h"
 #include "ns3/ipv4-address.h"
-#include "coap-client.h"
+#include "fdp-client.h"
+#include "fdp-server.h"
 
 namespace ns3
 {
-  class CoAPClientHelper
+  class FdpServerHelper
   {
   public:
-    CoAPClientHelper();
+    FdpServerHelper();
 
-    CoAPClientHelper(Address ip, uint16_t port);
-
-    CoAPClientHelper(Address addr);
+    FdpServerHelper(uint16_t port);
 
     void SetAttribute(std::string name, const AttributeValue &value);
 
@@ -48,11 +48,14 @@ namespace ns3
     ObjectFactory m_factory;
   };
 
-
-  class CoAPServerHelper
+  class FdpClientHelper
   {
   public:
-    CoAPServerHelper();
+    FdpClientHelper();
+
+    FdpClientHelper(Address ip, uint16_t port);
+
+    FdpClientHelper(Address addr);
 
     void SetAttribute(std::string name, const AttributeValue &value);
 
@@ -65,4 +68,4 @@ namespace ns3
   };
 }    
 
-#endif /* COAP_HELPER_H */
+#endif /* FDP_CLIENT_SERVER_HELPER_H */

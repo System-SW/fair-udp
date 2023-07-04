@@ -20,10 +20,10 @@
 
 namespace ns3
 {
-  constexpr unsigned int UAV_NUM = 15;
-  constexpr uint32_t TEST_TIME = 120; /* seconds */
-  constexpr uint32_t AVERAGE_INTERVAL = 1000; /* ms */
-  constexpr const char *XRANGE = "set xrange [0:+120]";
+  constexpr static unsigned int UAV_NUM = 15;
+  constexpr static uint32_t TEST_TIME = 120; /* seconds */
+  constexpr static uint32_t AVERAGE_INTERVAL = 1000; /* ms */
+  constexpr static const char *XRANGE = "set xrange [0:+120]";
 
   enum target_protocol
     {
@@ -31,5 +31,5 @@ namespace ns3
       UDP,
       TCP,
     };
-  constexpr target_protocol TARGET_PROTO = UDP;
+  constexpr static target_protocol TARGET_PROTO = UDP;
 }
