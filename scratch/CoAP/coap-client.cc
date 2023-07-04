@@ -24,6 +24,7 @@
 #include "ns3/socket-factory.h"
 #include "ns3/packet.h"
 #include "ns3/uinteger.h"
+#include "option.h"
 #include "coap-client.h"
 
 using namespace ns3;
@@ -52,7 +53,15 @@ TypeId CoAPClient::GetTypeId ()
                    "The destination port of the CoAP Client",
                    UintegerValue (5683),
                    MakeUintegerAccessor (&CoAPClient::m_Port),
-                   MakeUintegerChecker<uint16_t> ());
+                   MakeUintegerChecker<uint16_t> ())
+    .AddTraceSource ("MsgInterval",
+                     "notify msg transfer interval.",
+                     MakeTraceSourceAccessor(&CoAPClient::m_MsgIntervalCallback),
+                     "ns3::CoAPClient::MsgIntervalCB")
+    .AddTraceSource("MsgTransfer",
+                    "notify msg transfer.",
+                    MakeTraceSourceAccessor(&CoAPClient::m_TransferCallback),
+                    "ns3::CoAPClient::TransferPacketCB")
     ;
   return tid;
 }
@@ -81,6 +90,28 @@ CoAPClient::SetRemote (Address addr)
 {
   NS_LOG_FUNCTION (this << addr);
   m_Address = addr;
+}
+
+
+void
+CoAPClient::NotifyMsgInterval()
+{
+  Time rtt;
+  if constexpr (UseFDP)
+    {
+      rtt = m_FdpCC.GetRTT();
+    }
+  else
+    {
+      rtt = m_CoCoACC.GetRTO();
+    }
+
+  m_MsgIntervalCallback(rtt);
+  if (!Simulator::IsFinished())
+    {
+      Simulator::Schedule(Seconds(1),
+                          MakeCallback(&CoAPClient::NotifyMsgInterval, this));
+    }
 }
 
 void
@@ -140,6 +171,7 @@ CoAPClient::StartApplication ()
 
   m_socket->SetRecvCallback(MakeCallback(&CoAPClient::HandleRecv, this));
   m_sendEvent = Simulator::Schedule(Seconds(0.1), &CoAPClient::Put, this);
+  NotifyMsgInterval();
   // Simulator::Schedule(Seconds(0.1), &CoAPClient::SendPing, this, 0x1234);
 }
 
@@ -183,6 +215,19 @@ void CoAPClient::HandleRecv(Ptr<Socket> socket)
             case Signal::PONG:
               MeasureRTTWithPingPong(hdr);
               break;
+            case Signal::UNASSIGNED:
+              NS_LOG_INFO("Handle FDP Feedback.");
+              if constexpr (UseFDP)
+                {
+                  p->RemoveHeader(hdr); // remove CoAP header
+                  m_FdpCC.HandleFeedback(p);
+                  if (m_sendEvent.IsExpired())
+                    {
+                      m_sendEvent =
+                        m_FdpCC.ScheduleTransfer(MakeCallback(&CoAPClient::Put, this));
+                    }
+                }
+              break;
             default:
               NS_ABORT_MSG("Not Implemented CoAP Classes.");
               break;
@@ -194,4 +239,16 @@ void CoAPClient::HandleRecv(Ptr<Socket> socket)
         }
     }
 
+}
+
+void
+CoAPClient::SendPacket(Ptr<Packet> packet) const
+{
+  m_socket->Send(packet);
+}
+
+void
+CoAPClient::NotifyPacketTransmission(Ptr<const Packet> p)
+{
+  m_TransferCallback(p);
 }

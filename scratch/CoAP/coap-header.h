@@ -15,10 +15,10 @@
  *
  * Author: Chang-Hui Kim <kch9001@gmail.com>
  */
-#include "ns3/header.h"
 #pragma once
 #ifndef COAP_HEADER_H
 #define COAP_HEADER_H
+#include "ns3/header.h"
 
 namespace ns3
 {
@@ -71,6 +71,10 @@ namespace ns3
 
     enum class Signal : uint8_t
       {
+        /*
+         * FDP Feedback uses UNASSIGNED Signal.
+         * So, FDP Client handle UNASSIGNED Signal message as FDP feedback.
+         */
         UNASSIGNED = 0,
         CSM = 1,
         PING = 2,
@@ -113,6 +117,21 @@ namespace ns3
     // and below is payload
 
   private:
+
+    // use only lower
+    // don't use directly
+    void SetClass(CoAPHeader::Class cls);
+
+    // use only lower
+    // don't use directly
+    template <CoAPHeader::Class cls, typename CodeType = CoAPHeader::code_t<cls>>
+    void SetCode(CodeType code)
+    {
+      auto code_val = static_cast<uint8_t>(code);
+      m_fixed_hdr.slot[1] |= (0x1F & code_val);
+    }
+
+  public:
     // use only lower 2bits
     void SetVersion(uint8_t version);
 
@@ -122,22 +141,17 @@ namespace ns3
     // use only lower 4bits
     void SetTKL(uint8_t tkl);
 
-    // use only lower
-    void SetClass(CoAPHeader::Class cls);
-
-    // use only lower
-    template <CoAPHeader::Class cls, typename CodeType = CoAPHeader::code_t<cls>>
-    void SetCode(CodeType code)
+    template <CoAPHeader::Class cls>
+    void SetClassAndCode(code_t<cls> code)
     {
-      auto code_val = static_cast<uint8_t>(code);
-      m_fixed_hdr.slot[1] |= (0x1F & code_val);
+      SetClass(cls);
+      SetCode<cls>(code);
     }
 
     void SetMID(uint16_t mid);
 
     void SetToken(uint64_t token);
 
-  public:
     uint8_t GetVersion() const;
 
     CoAPHeader::Type GetType() const;
@@ -166,9 +180,7 @@ namespace ns3
 
     static CoAPHeader MakePing(uint8_t tkl, uint64_t token);
     static CoAPHeader MakePong(CoAPHeader ping_hdr);
-
-    // template <CoAPHeader::Method M>
-    // static Ptr<Packet> MakeResponse(CoAPHeader request_hdr, CoAPHeader::ServerErr err);
+    static CoAPHeader MakeUnassignedSignal(uint8_t tkl, uint64_t token); // for fdp feedback
   };
 
   template<>

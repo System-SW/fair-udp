@@ -19,11 +19,15 @@
 #ifndef COAP_SERVER_H
 #define COAP_SERVER_H
 
+#include <unordered_map>
 #include "ns3/application.h"
 #include "ns3/event-id.h"
 #include "ns3/ptr.h"
 #include "ns3/ipv4-address.h"
+#include "ns3/inet-socket-address.h"
+#include "ns3/traced-callback.h"
 #include "coap-header.h"
+#include "fdp-receiver.h"
 
 namespace ns3
 {
@@ -64,6 +68,29 @@ namespace ns3
     uint16_t m_Port{5683};
     Ptr<Socket> m_socket{0};
     Ptr<Socket> m_socket6{0};
+
+    // FDP Congestion Control Information
+    struct AddressHash
+    {
+      size_t operator() (const Address &x) const
+      {
+        NS_ABORT_IF(!InetSocketAddress::IsMatchingType(x));
+        auto a = InetSocketAddress::ConvertFrom(x);
+        return std::hash<uint32_t>()(a.GetIpv4().Get());
+      }
+    };
+
+    std::unordered_map<Address, FdpReceiverCC, AddressHash> m_CC_infos;
+
+    FdpReceiverCC& GetCongestionController(const Address &addr);
+
+  public:                       // for tracing
+    using ReceivePacketCB = void (*) (Ptr<const Packet>);
+
+    void NotifyPacketReceive(Ptr<const Packet>);
+
+  private:
+    TracedCallback<Ptr<const Packet>> m_ReceiveCallback;
   };
 }    
 

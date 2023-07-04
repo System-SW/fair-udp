@@ -24,6 +24,7 @@
 #include "ns3/socket-factory.h"
 #include "ns3/packet.h"
 #include "ns3/uinteger.h"
+#include "option.h"
 #include "coap-client.h"
 
 using namespace ns3;
@@ -34,15 +35,44 @@ void
 CoAPClient::Put ()
 {
   NS_LOG_FUNCTION (this);
-  NS_ASSERT (m_sendEvent.IsExpired());
+
+  // XXX: fdp may control CoAP Message Transfer.
+  // 1. Normal Message Transfer
+  //    if the message sequence number is 0 or 1, then it is normal message
+  //    1) Record Message Transfer Interval into message
+  //    2) Normal Message Transfer Interval is measured RTT
+  //    3) if you receive FDP feedback from server, then recalculate RTT and RTO
+  // 
+  // 2. RESET Procedure
+  //    if the message sequence number is 2, then it is the reset message
+  //    After transfering the reset message, the client has to wait for reset feedback at least RTO.
+  //    1) the client receives the reset feedback before RTT
+  //       update RTT with measured value.
+  //       note: this case is the only case that the fdp allows the client to reduce its transfer interval.
+  // 
+  //    2) the client receives the reset feedback after RTT but before RTO
+  //       update RTT with measured value.
+  // 
+  //    3) the client fails to receive the reset feedback within RTO
+  //       set RTO as RTT value.
 
   CoAPHeader hdr;
-  CoAPHeader::PreparePut(hdr, 0, 0, m_mid++);
+  CoAPHeader::PreparePut(hdr, 0, 0, m_mid++, false); // default is NON
   Ptr<Packet> packet = Create<Packet>(m_size);
-  packet->AddHeader(hdr);
 
-  m_socket->Send(packet);
-  m_sendEvent = Simulator::Schedule(Seconds(0.1), &CoAPClient::Put, this);
+  NotifyPacketTransmission(packet); // tracing purpose
+
+  if constexpr (UseFDP)
+    {
+      m_FdpCC.TransferMessage(m_socket, packet, hdr);
+      m_sendEvent =
+        m_FdpCC.ScheduleTransfer(MakeCallback(&CoAPClient::Put, this));
+    }
+  else
+    {
+      packet->AddHeader(hdr);
+      m_CoCoACC.TransferMsg(packet, MakeCallback(&CoAPClient::Put, this));
+    }
 }
 
 template <>
@@ -59,7 +89,11 @@ void CoAPClient::HandleResponse<CoAPHeader::Success::CREATED>
     }
   else  // CON
     {
-
+      NS_LOG_INFO("Piggyback ACK! " << hdr);
+      if constexpr (!UseFDP)
+        {
+          m_CoCoACC.NotifyACK(response);
+        }
     }
 }
 
