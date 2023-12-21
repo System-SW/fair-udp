@@ -41,23 +41,50 @@ namespace ns3
     class EstimatorImpl
     {
     private:
-      Time m_RTT;
-      Time m_RTO;
-      Time m_RTTVAR{Seconds(0)};
+      Time m_RTT_strong{Seconds(0)};
+      Time m_RTT_weak{Seconds(0)};
+      Time m_E_strong;
+      Time m_E_weak;
+      Time m_RTTVAR_strong{Seconds(0)};
+      Time m_RTTVAR_weak{Seconds(0)};
     public:
-      EstimatorImpl(Time InitRTT, Time InitRTO):
-        m_RTT{InitRTT}, m_RTO{InitRTO}
-      {
-      }
-
+      template <EstimatorType type>
       Time GetRTT() const
       {
-        return m_RTT;
+        if constexpr (type == EstimatorType::STRONG)
+          {
+            return m_RTT_strong;
+          }
+        else
+          {
+            return m_RTT_weak;
+          }
       }
 
-      Time GetRTO() const
+      template <EstimatorType type>
+      Time GetRTTVAR() const
       {
-        return m_RTO;
+        if constexpr (type == EstimatorType::STRONG)
+          {
+            return m_RTTVAR_strong;
+          }
+        else
+          {
+            return m_RTTVAR_weak;
+          }
+      }
+
+      template <EstimatorType type>
+      Time GetE() const
+      {
+        if constexpr (type == EstimatorType::STRONG)
+          {
+            return m_E_strong;
+          }
+        else
+          {
+            return m_E_weak;
+          }
       }
 
       template <EstimatorType type>
@@ -65,35 +92,35 @@ namespace ns3
       {
         constexpr static double alpha = 0.25;
         constexpr static double beta = 0.125;
-        m_RTT = (1 - alpha) * m_RTT + alpha * newRTT;
-        m_RTTVAR = (1 - beta) * m_RTTVAR
-          + beta * Seconds(std::abs((m_RTT - newRTT).GetSeconds()));
 
         if constexpr (type == EstimatorType::STRONG)
           {
+            m_RTTVAR_strong = (1 - beta) * GetRTTVAR<type>()
+              + beta * Seconds(std::abs((GetRTT<type>() - newRTT).GetSeconds()));
+            m_RTT_strong = (1 - alpha) * GetRTT<type>()
+              + alpha * newRTT;
             constexpr static unsigned int K = 4;
-            m_RTO = newRTT + K * m_RTTVAR;
+            m_E_strong = newRTT + K * GetRTTVAR<type>();
           }
         else
           {
+            m_RTTVAR_weak = (1 - beta) * GetRTTVAR<type>()
+              + beta * Seconds(std::abs((GetRTT<type>() - newRTT).GetSeconds()));
+            m_RTT_weak = (1 - alpha) * GetRTT<type>()
+              + alpha * newRTT;
             constexpr static unsigned int K = 1;
-            m_RTO = m_RTT + K * m_RTTVAR;
+            m_E_weak = newRTT + K * GetRTTVAR<type>();
           }
       }
     };
 
-    EstimatorImpl m_Impl{MilliSeconds(0), MilliSeconds(2000)};
+    EstimatorImpl m_Impl;
     Time m_OverallRTO{Seconds(2)};
 
   public:
-    Time GetRTT() const
-    {
-      return m_Impl.GetRTT();
-    }
-
     Time GetRTO() const
     {
-      return m_Impl.GetRTO();
+      return m_OverallRTO;
     }
 
     template <EstimatorType type>
@@ -102,15 +129,15 @@ namespace ns3
       m_Impl.UpdatePeriods<type>(newRTT);
       if constexpr (type == EstimatorType::STRONG)
         {
-          m_OverallRTO = 0.5 * GetRTO() + 0.5 * m_OverallRTO;
+          m_OverallRTO = 0.5 * m_Impl.GetE<type>() + 0.5 * m_OverallRTO;
         }
       else
         {
-          m_OverallRTO = 0.25 * GetRTO() + 0.75 * m_OverallRTO;
+          m_OverallRTO = 0.25 * m_Impl.GetE<type>() + 0.75 * m_OverallRTO;
         }
     }
 
-    Time GetRetransmissionRTO() const
+    void VariableBackOff()
     {
       double VBF;
       if (m_OverallRTO < Seconds(1))
@@ -119,7 +146,7 @@ namespace ns3
         VBF = 2;
       else
         VBF = 1.5;
-      return VBF * m_OverallRTO;
+      m_OverallRTO = m_OverallRTO * VBF;
     }
 
     Time GetOverallRTO() const
@@ -192,7 +219,15 @@ namespace ns3
     void TransferMsg(Ptr<Packet> packet,
                      std::function<void(void)> &&context = [](){});
     void NotifyACK(Ptr<Packet> ack);
-    Time GetRTO() const;
+    Time GetRTO() const
+    {
+      return m_Estimator.GetOverallRTO();
+    }
+
+    void VariableBackOff()
+    {
+      m_Estimator.VariableBackOff();
+    }
   };
 }    
 

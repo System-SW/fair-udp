@@ -62,18 +62,19 @@ FdpSenderCC::ScheduleTransfer(std::function<void ()> &&callback)
       // do not flip sequence bit till finish reset procedure.
       // if fails to receive reset feedback, then go back to normal status.
       m_ResetEvent =
-        Simulator::Schedule(m_RTO,
+        Simulator::Schedule(GetRTO(),
                             [this, cb = std::forward<std::function<void()>>(callback)]
                             {
-                              m_RTT = m_RTO; // directly set RTO as RTT
                               FlipSeqBit();
+                              m_RTT = GetRTO();
+                              UpdateRTO(GetRTT());
                               cb();
                             });
       return m_ResetEvent;
     }
   else
     {
-      return Simulator::Schedule(GetRTT(),
+      return Simulator::Schedule(GetRTO(),
                                  std::forward<std::function<void()>>(callback));
     }
 }

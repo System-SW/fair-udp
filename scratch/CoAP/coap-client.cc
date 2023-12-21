@@ -97,9 +97,9 @@ void
 CoAPClient::NotifyMsgInterval()
 {
   Time rtt;
-  if constexpr (UseFDP)
+  if (UseFDP)
     {
-      rtt = m_FdpCC.GetRTT();
+      rtt = m_FdpCC.GetRTO();
     }
   else
     {
@@ -217,7 +217,7 @@ void CoAPClient::HandleRecv(Ptr<Socket> socket)
               break;
             case Signal::UNASSIGNED:
               NS_LOG_INFO("Handle FDP Feedback.");
-              if constexpr (UseFDP)
+              if (UseFDP)
                 {
                   p->RemoveHeader(hdr); // remove CoAP header
                   m_FdpCC.HandleFeedback(p);

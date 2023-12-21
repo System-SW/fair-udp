@@ -101,7 +101,7 @@ LatencyRecoder::RecordTransfer(std::string context, ns3::Ptr<const ns3::Packet> 
   p->AddPacketTag(trace_tag);
 
   record_t record = { false, current_time, packet_id };
-  m_LatencyRecords[node_id].push_back(record);
+  m_LatencyRecords[node_id].push_back(std::make_tuple(ns3::Seconds(0), record));
 }
 
 
@@ -123,8 +123,9 @@ LatencyRecoder::RecordReceive(std::string context, ns3::Ptr<const ns3::Packet> p
 
   auto& record_list = m_LatencyRecords[node_id];
   auto target = std::find_if(record_list.begin(), record_list.end(),
-                             [packet_id, &duplicated](record_t record)
+                             [packet_id, &duplicated](const auto& item)
                              {
+                               const auto& record = std::get<1>(item);
                                if (std::get<2>(record) == packet_id)
                                  {
                                    if (std::get<0>(record))
@@ -143,9 +144,10 @@ LatencyRecoder::RecordReceive(std::string context, ns3::Ptr<const ns3::Packet> p
     {
       // modify value
       auto current_time = ns3::Simulator::Now();
-      record_t& record = *target;
+      auto &[record_time, record] = *target;
       std::get<0>(record) = true;
       std::get<1>(record) = current_time - std::get<1>(record);
+      record_time = current_time;
     }
   else if (duplicated)
     {
@@ -174,11 +176,12 @@ LatencyRecoder::RecordErrorRate() const
     {
       errorfile << node << ',';
       std::size_t lossed = 0;
-      std::for_each(records.cbegin(), records.cend(), [&lossed](auto record)
-      {
-        if (!std::get<0>(record))
-          lossed++;
-      });
+
+      for (const auto& [time, record] : records)
+        {
+          if (!std::get<0>(record))
+            lossed++;
+        }
       double error_rate = lossed / (double) records.size();
       errorfile << error_rate << '\n';
     }
@@ -192,14 +195,15 @@ LatencyRecoder::RecordLatency() const
   for (const auto& [node, records] : m_LatencyRecords)
     {
       std::ofstream latencyfile{m_ErrorRateFileName + m_LatencyFileName + node + ".csv"};
-      latencyfile << "Latency(s)\n"; // write csv header
+      latencyfile << "ReceiveTime,Latency(s)\n"; // write csv header
 
-      for (auto record : records)
+      for (auto [time, record] : records)
         {
           // we can measure the latency from received packet only
           if (std::get<0>(record))
             {
-              latencyfile << std::get<1>(record).GetSeconds() << '\n';
+              latencyfile << time.GetSeconds() << ','
+                          << std::get<1>(record).GetSeconds() << '\n';
             }
         }
     }

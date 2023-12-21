@@ -48,8 +48,8 @@ CoCoA::TransferNON(Ptr<Packet> packet)
   IncTC();
 
   // go back to context
-  NS_LOG_INFO(m_Estimator.GetRTO().GetSeconds());
-  Simulator::Schedule(m_Estimator.GetRTO(), m_Context);
+  NS_LOG_INFO(GetRTO().GetSeconds());
+  Simulator::Schedule(GetRTO(), m_Context);
 }
 
 void
@@ -71,7 +71,7 @@ CoCoA::TransferCON(Ptr<Packet> packet)
   SetConPacket(packet);
 
   IncTC();
-  m_AckWaitEvent = Simulator::Schedule(m_Estimator.GetRTO(),
+  m_AckWaitEvent = Simulator::Schedule(GetRTO(),
                                        MakeCallback(&CoCoA::Retransmit, this));
 }
 
@@ -83,7 +83,7 @@ CoCoA::Retransmit()
 
   IncRC();
   m_SendPacketFunction(GetConPacket());
-  m_AckWaitEvent = Simulator::Schedule(m_Estimator.GetRTO(),
+  m_AckWaitEvent = Simulator::Schedule(GetRTO(),
                                        MakeCallback(&CoCoA::TerminalTransmit, this));
 }
 
@@ -103,7 +103,8 @@ CoCoA::TerminalTransmit()
     }
 
   m_SendPacketFunction(GetConPacket()); // retransmission
-  m_AckWaitEvent = Simulator::Schedule(m_Estimator.GetRetransmissionRTO(),
+  VariableBackOff();
+  m_AckWaitEvent = Simulator::Schedule(m_Estimator.GetOverallRTO(),
                                        MakeCallback(&CoCoA::TerminalTransmit, this));
 }
 
@@ -194,9 +195,4 @@ CoCoA::NotifyACK(Ptr<Packet> ack)
     }
   ClearConStates();
   m_Context();            // go back to context
-}
-
-Time CoCoA::GetRTO() const
-{
-  return m_Estimator.GetRTO();
 }

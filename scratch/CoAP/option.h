@@ -18,7 +18,10 @@
 #pragma once
 #ifndef OPTION_H
 #define OPTION_H
+#include <string>
 
-constexpr inline static bool UseFDP = true;
+inline bool UseFDP = false;
+inline bool SendTCP = false;
+inline std::string PCAP_NAME = "/tmp/tcp-cocoa";
 
 #endif /* OPTION_H */

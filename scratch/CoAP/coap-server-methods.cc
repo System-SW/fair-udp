@@ -49,7 +49,7 @@ void CoAPServer::HandleMethod<CoAPHeader::Method::PUT>
                                         CoAPHeader::Success::CREATED);
       SendPacket(response, addr);
 
-      if constexpr (UseFDP)
+      if (UseFDP)
         {
           // FDP congestion control part
           FDPMessageHeader fdp_hdr;

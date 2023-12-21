@@ -25,6 +25,7 @@
 #include "coap-header.h"
 #include "fdp-header.h"
 #include "tests.h"
+#include "option.h"
 
 using namespace ns3;
 
@@ -148,8 +149,18 @@ int main(int argc, char *argv[])
   int which_one;
   CommandLine cmd{__FILE__};
   cmd.AddValue("WhichTest",
-               "1. csma test\n 2. header serialization test\n",
+               "1. csma test\n 2. header serialization test\n"
+               "3. CoAP Transfer Test.\n",
                which_one);
+  cmd.AddValue("UseFDP",
+               "true: enable FDP, false: enable CoCoA\n",
+               UseFDP);
+  cmd.AddValue("SendTCP",
+               "true: enable TCP",
+               SendTCP);
+  cmd.AddValue("PCAP_Name",
+               "Pcap File Name with absolute path\n",
+               PCAP_NAME);
   cmd.Parse(argc, argv);
 
   switch (which_one)

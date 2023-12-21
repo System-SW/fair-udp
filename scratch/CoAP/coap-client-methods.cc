@@ -62,7 +62,7 @@ CoAPClient::Put ()
 
   NotifyPacketTransmission(packet); // tracing purpose
 
-  if constexpr (UseFDP)
+  if (UseFDP)
     {
       m_FdpCC.TransferMessage(m_socket, packet, hdr);
       m_sendEvent =
@@ -90,7 +90,7 @@ void CoAPClient::HandleResponse<CoAPHeader::Success::CREATED>
   else  // CON
     {
       NS_LOG_INFO("Piggyback ACK! " << hdr);
-      if constexpr (!UseFDP)
+      if (!UseFDP)
         {
           m_CoCoACC.NotifyACK(response);
         }

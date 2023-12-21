@@ -32,6 +32,7 @@
 #include "option.h"
 #include "coap-helper.h"
 #include "tests.h"
+#include "pendulum_mobility.h"
 
 using namespace ns3;
 using namespace std::string_literals;
@@ -50,7 +51,7 @@ struct WifiTestArgs
 
 static auto SERVER_BANDWIDTH = "1000Mbps"s;
 static std::size_t NUM_UAVS = 40;
-static Time SIMUL_TIME = Seconds(30);
+static Time SIMUL_TIME = Seconds(120);
 
 static NetDeviceContainer
 InstallP2P(NodeContainer& Nodes)
@@ -82,7 +83,7 @@ SettingWifi(Ptr<Node> apNode, NodeContainer& staNodes)
 
   // generate pcap file
   phy.SetPcapDataLinkType(WifiPhyHelper::DLT_IEEE802_11_RADIO);
-  phy.EnablePcap("/tmp/coap-cocoa", apDevices.Get(0));
+  phy.EnablePcap(PCAP_NAME, apDevices.Get(0));
 
   return {apDevices, staDevices};
 }
@@ -95,7 +96,11 @@ AllocatePositionsForDrones(NodeContainer& staNodes)
   mobility.SetPositionAllocator("ns3::UniformDiscPositionAllocator", "rho",
                                 DoubleValue(30), "X", DoubleValue(50),
                                 "Y", DoubleValue(50));
-  mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
+  // mobility.SetMobilityModel("ns3::ConstantPositionMobilityModel");
+  mobility.SetMobilityModel("ns3::PendulumMobility",
+                            "Period", TimeValue(Seconds(10)),
+                            "ApproachRatio", DoubleValue(0.6),
+                            "Destination", VectorValue(Vector {50, 50, 0}));
   mobility.Install(staNodes);
 }
 
@@ -170,7 +175,7 @@ InstallTcpOnOff(NodeContainer &nodes, Address dest, Time start = Seconds(1),
 
 void WifiTest()
 {
-  if constexpr (UseFDP)
+  if (UseFDP)
     {
       std::cout << "FDP Test\n";
     }
@@ -207,8 +212,12 @@ void WifiTest()
   auto coap_server = InstallCoAPServer(p2pNodes.Get(GroundNodes::GC));
   auto coap_clients = InstallCoAPClient(wifiStaNodes, serverAddress);
 
-  auto tcp_server = InstallTcpSink(p2pNodes.Get(GroundNodes::GC), serverAddress);
-  auto tcp_clients = InstallTcpOnOff(wifiStaNodes, serverAddress);
+  if (SendTCP)
+    {
+      std::cout << "Enable TCP\n";
+      auto tcp_server = InstallTcpSink(p2pNodes.Get(GroundNodes::GC), serverAddress);
+      auto tcp_clients = InstallTcpOnOff(wifiStaNodes, serverAddress);
+    }
 
   TransferSpeedCollector collector;
   LatencyRecoder latencyRecoder{"./error/", "latency_"};
